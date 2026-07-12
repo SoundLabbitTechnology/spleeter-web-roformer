@@ -9,6 +9,8 @@ class SeparatorRegistryTests(unittest.TestCase):
         self.assertEqual(get_separator_spec('bs_roformer_6s').stems, SIX_STEMS)
         self.assertEqual(get_separator_spec('mel_roformer_vocals').stems,
                          VOCALS_AND_OTHER)
+        self.assertEqual(get_separator_spec('scnet').stems,
+                         ('vocals', 'other', 'bass', 'drums'))
 
     def test_demucs_requires_non_negative_random_shifts(self):
         validate_separator_args('htdemucs', {'random_shifts': 0})

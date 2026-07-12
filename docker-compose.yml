@@ -20,6 +20,7 @@ x-celery-env: &celery-env
   - YOUTUBE_LENGTH_LIMIT
   - YOUTUBEDL_SOURCE_ADDR
   - YOUTUBEDL_VERBOSE
+  - SCNET_OVERLAP
 services:
   redis:
     image: redis:6.0-buster

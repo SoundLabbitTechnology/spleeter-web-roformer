@@ -28,6 +28,7 @@ DEMUCS_OVERLAP = float(os.getenv('DEMUCS_OVERLAP', _gpu_defaults['demucs_overlap
 ROFORMER_BATCH_SIZE = max(1, int(os.getenv('ROFORMER_BATCH_SIZE', _gpu_defaults['roformer_batch_size'])))
 ROFORMER_NUM_OVERLAP = max(1, int(os.getenv('ROFORMER_NUM_OVERLAP', _gpu_defaults['roformer_num_overlap'])))
 MEL_ROFORMER_NUM_OVERLAP = max(1, int(os.getenv('MEL_ROFORMER_NUM_OVERLAP', _gpu_defaults['mel_num_overlap'])))
+SCNET_OVERLAP = min(0.9, max(0.1, float(os.getenv('SCNET_OVERLAP', '0.5'))))
 GPU_MIXED_PRECISION = os.getenv('GPU_MIXED_PRECISION', '1') == '1'
 
 ALLOW_ALL_HOSTS = os.getenv('ALLOW_ALL_HOSTS', '0') == '1'
