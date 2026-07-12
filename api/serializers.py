@@ -1,11 +1,10 @@
 from rest_framework import serializers
 from .models import *
+from .separators.registry import get_separator_spec, validate_separator_args
 from .validators import is_valid_youtube
 """
 This module defines Django serializers.
 """
-
-LEGACY_SEPARATORS = {D3NET, XUMX}
 
 class PickledObjectSerializerField(serializers.Field):
     """Serializer field for PickledObjectField"""
@@ -93,22 +92,10 @@ class FullDynamicMixSerializer(serializers.ModelSerializer):
 
         :param data: Request data
         """
-        if data['separator'] in LEGACY_SEPARATORS:
-            raise serializers.ValidationError({
-                'separator':
-                'D3Net and X-UMX are no longer available for new mixes.'
-            })
-
-        args = data['separator_args']
-        if data['separator'] in DEMUCS_FAMILY:
-            try:
-                random_shifts = args['random_shifts']
-                if random_shifts < 0:
-                    raise serializers.ValidationError(
-                        {'args': 'Random shifts must be greater than 0.'})
-            except KeyError:
-                raise serializers.ValidationError(
-                    {'args': "Must include 'random_shifts' argument."})
+        try:
+            validate_separator_args(data['separator'], data['separator_args'])
+        except ValueError as exc:
+            raise serializers.ValidationError({'separator_args': str(exc)}) from exc
 
         return data
 
@@ -132,27 +119,15 @@ class FullStaticMixSerializer(serializers.ModelSerializer):
 
         :param data: Request data
         """
-        if data['separator'] in MEL_ROFORMER_FAMILY:
-            all_checked = data['vocals'] and data['other']
-            none_checked = not (data['vocals'] or data['other'])
-        else:
-            all_checked = data['vocals'] and data['drums'] and data[
-                'bass'] and data['other']
-            none_checked = not (data['vocals'] or data['drums'] or data['bass']
-                                or data['other'])
+        try:
+            spec = get_separator_spec(data['separator'])
+            validate_separator_args(data['separator'], data['separator_args'])
+        except ValueError as exc:
+            raise serializers.ValidationError({'separator': str(exc)}) from exc
 
-        if data['separator'] == SPLEETER_PIANO:
-            all_checked = all_checked and data['piano']
-            none_checked = none_checked and not data['piano']
-        elif data['separator'] == BS_ROFORMER_5S_PIANO:
-            all_checked = all_checked and data['piano']
-            none_checked = none_checked and not data['piano']
-        elif data['separator'] == BS_ROFORMER_5S_GUITAR:
-            all_checked = all_checked and data['guitar']
-            none_checked = none_checked and not data['guitar']
-        elif data['separator'] == BS_ROFORMER_6S:
-            all_checked = all_checked and data['guitar'] and data['piano']
-            none_checked = none_checked and not data['guitar'] and not data['piano']
+        selected_parts = [data[part] for part in spec.stems]
+        all_checked = all(selected_parts)
+        none_checked = not any(selected_parts)
 
         if all_checked:
             raise serializers.ValidationError(
@@ -160,23 +135,6 @@ class FullStaticMixSerializer(serializers.ModelSerializer):
         if none_checked:
             raise serializers.ValidationError(
                 {'checked': 'You must check at least one part.'})
-
-        args = data['separator_args']
-        if data['separator'] in LEGACY_SEPARATORS:
-            raise serializers.ValidationError({
-                'separator':
-                'D3Net and X-UMX are no longer available for new mixes.'
-            })
-
-        if data['separator'] in DEMUCS_FAMILY:
-            try:
-                random_shifts = args['random_shifts']
-                if random_shifts < 0:
-                    raise serializers.ValidationError(
-                        {'args': 'Random shifts must be greater than 0.'})
-            except KeyError:
-                raise serializers.ValidationError(
-                    {'args': "Must include 'random_shifts' argument."})
 
         return data
 

@@ -12,62 +12,21 @@ from django.core.files.base import ContentFile
 from django.utils import timezone
 
 from .celery import app
-from .models import (DEMUCS_FAMILY, D3NET, SPLEETER, SPLEETER_PIANO, XUMX, BS_ROFORMER,
-                     BS_ROFORMER_5S_GUITAR, BS_ROFORMER_5S_PIANO, BS_ROFORMER_6S,
-                     BS_ROFORMER_FAMILY, MEL_ROFORMER_FAMILY,
-                     DynamicMix, SourceFile, StaticMix, TaskStatus,
+from .models import (DynamicMix, SourceFile, StaticMix, TaskStatus,
                      YTAudioDownloadTask)
-from .separators.demucs_separator import DemucsSeparator
-from .separators.spleeter_separator import SpleeterSeparator
-from .separators.bs_roformer_separator import BSRoformerSeparator
-from .separators.mel_roformer_separator import MelRoformerSeparator
-from .util import ALL_PARTS, ALL_PARTS_VOCALS_OTHER, ALL_PARTS_5_PIANO, ALL_PARTS_5_GUITAR, ALL_PARTS_6, output_format_to_ext, get_valid_filename
+from .separators.registry import build_separator, get_separator_spec
+from .util import output_format_to_ext, get_valid_filename
 from .youtubedl import download_audio, get_file_ext
 
 """
 This module defines various Celery tasks used for Spleeter Web.
 """
 
-LEGACY_SEPARATORS = {D3NET, XUMX}
-
-
 def get_separator(separator: str, separator_args: Dict, bitrate: int,
                   cpu_separation: bool):
     """Returns separator object for corresponding source separation model."""
-    if separator in LEGACY_SEPARATORS:
-        raise ValueError(
-            f'{separator} is no longer supported for new separations.')
-    if separator == SPLEETER:
-        return SpleeterSeparator(cpu_separation, bitrate, False)
-    if separator == SPLEETER_PIANO:
-        return SpleeterSeparator(cpu_separation, bitrate, True)
-    if separator in BS_ROFORMER_FAMILY:
-        # Map separator to stem_mode
-        stem_mode_map = {
-            BS_ROFORMER: '4stem',
-            BS_ROFORMER_5S_GUITAR: '5stem_guitar',
-            BS_ROFORMER_5S_PIANO: '5stem_piano',
-            BS_ROFORMER_6S: '6stem',
-        }
-        stem_mode = stem_mode_map.get(separator, '4stem')
-        return BSRoformerSeparator(
-            cpu_separation=cpu_separation,
-            output_format=bitrate,
-            batch_size=settings.ROFORMER_BATCH_SIZE,
-            overlap=settings.ROFORMER_NUM_OVERLAP,
-            stem_mode=stem_mode,
-        )
-    if separator in MEL_ROFORMER_FAMILY:
-        return MelRoformerSeparator(
-            cpu_separation=cpu_separation,
-            output_format=bitrate,
-            num_overlap=settings.MEL_ROFORMER_NUM_OVERLAP,
-        )
-    if separator in DEMUCS_FAMILY:
-        random_shifts = separator_args.get('random_shifts', 0)
-        return DemucsSeparator(separator, cpu_separation, bitrate,
-                               random_shifts)
-    raise ValueError(f'Unknown separator "{separator}".')
+    return build_separator(separator, separator_args, bitrate, cpu_separation,
+                           settings)
 
 @app.task()
 def create_static_mix(static_mix_id):
@@ -111,26 +70,8 @@ def create_static_mix(static_mix_id):
             static_mix.save()
             return
 
-        parts = {
-            'vocals': static_mix.vocals,
-            'drums': static_mix.drums,
-            'bass': static_mix.bass,
-            'other': static_mix.other
-        }
-        if static_mix.separator in MEL_ROFORMER_FAMILY:
-            parts = {
-                'vocals': static_mix.vocals,
-                'other': static_mix.other,
-            }
-        if static_mix.separator == SPLEETER_PIANO:
-            parts['piano'] = static_mix.piano
-        elif static_mix.separator == BS_ROFORMER_5S_GUITAR:
-            parts['guitar'] = static_mix.guitar
-        elif static_mix.separator == BS_ROFORMER_5S_PIANO:
-            parts['piano'] = static_mix.piano
-        elif static_mix.separator == BS_ROFORMER_6S:
-            parts['guitar'] = static_mix.guitar
-            parts['piano'] = static_mix.piano
+        spec = get_separator_spec(static_mix.separator)
+        parts = {part: getattr(static_mix, part) for part in spec.stems}
 
         # Non-local filesystems like S3/Azure Blob do not support source_path()
         is_local = settings.DEFAULT_FILE_STORAGE == 'api.storage.FileSystemStorage'
@@ -226,15 +167,7 @@ def create_dynamic_mix(dynamic_mix_id):
             dynamic_mix.save()
             return
 
-        all_parts = ALL_PARTS_5_PIANO if dynamic_mix.separator == SPLEETER_PIANO else ALL_PARTS
-        if dynamic_mix.separator in MEL_ROFORMER_FAMILY:
-            all_parts = ALL_PARTS_VOCALS_OTHER
-        if dynamic_mix.separator == BS_ROFORMER_5S_GUITAR:
-            all_parts = ALL_PARTS_5_GUITAR
-        elif dynamic_mix.separator == BS_ROFORMER_5S_PIANO:
-            all_parts = ALL_PARTS_5_PIANO
-        elif dynamic_mix.separator == BS_ROFORMER_6S:
-            all_parts = ALL_PARTS_6
+        all_parts = get_separator_spec(dynamic_mix.separator).stems
 
         # Non-local filesystems like S3/Azure Blob do not support source_path()
         is_local = settings.DEFAULT_FILE_STORAGE == 'api.storage.FileSystemStorage'

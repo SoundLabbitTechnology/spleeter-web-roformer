@@ -67,6 +67,13 @@ The Mel-RoFormer checkpoint is downloaded automatically on its first use into
 `pretrained_models/mel_roformer/`. Its Hugging Face revision is pinned in code
 for repeatable deployments.
 
+### Model registry
+
+Backend model contracts live in `api/separators/registry.py`. Each entry defines
+its stable API identifier, supported stems, argument validation, and lazy
+runtime construction. Add a new model there before exposing it in the frontend;
+this keeps worker output validation and static-mix selections consistent.
+
 ### GPU inference profiles
 
 GPU deployments use `GPU_PROFILE` to trade throughput for quality. The profile
