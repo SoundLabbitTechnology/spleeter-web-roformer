@@ -13,6 +13,23 @@ YOUTUBE_API_KEY = os.getenv('YOUTUBE_API_KEY', '')
 
 CPU_SEPARATION = os.getenv('CPU_SEPARATION', '1') == '1'
 
+# GPU inference profiles. Individual values can be overridden for tuning a
+# particular card without changing application code.
+GPU_PROFILE = os.getenv('GPU_PROFILE', 'balanced').lower()
+GPU_PROFILE_DEFAULTS = {
+    'throughput': {'demucs_overlap': 0.25, 'roformer_batch_size': 2, 'roformer_num_overlap': 2, 'mel_num_overlap': 2},
+    'balanced': {'demucs_overlap': 0.25, 'roformer_batch_size': 1, 'roformer_num_overlap': 2, 'mel_num_overlap': 2},
+    'quality': {'demucs_overlap': 0.5, 'roformer_batch_size': 1, 'roformer_num_overlap': 4, 'mel_num_overlap': 4},
+}
+if GPU_PROFILE not in GPU_PROFILE_DEFAULTS:
+    GPU_PROFILE = 'balanced'
+_gpu_defaults = GPU_PROFILE_DEFAULTS[GPU_PROFILE]
+DEMUCS_OVERLAP = float(os.getenv('DEMUCS_OVERLAP', _gpu_defaults['demucs_overlap']))
+ROFORMER_BATCH_SIZE = max(1, int(os.getenv('ROFORMER_BATCH_SIZE', _gpu_defaults['roformer_batch_size'])))
+ROFORMER_NUM_OVERLAP = max(1, int(os.getenv('ROFORMER_NUM_OVERLAP', _gpu_defaults['roformer_num_overlap'])))
+MEL_ROFORMER_NUM_OVERLAP = max(1, int(os.getenv('MEL_ROFORMER_NUM_OVERLAP', _gpu_defaults['mel_num_overlap'])))
+GPU_MIXED_PRECISION = os.getenv('GPU_MIXED_PRECISION', '1') == '1'
+
 ALLOW_ALL_HOSTS = os.getenv('ALLOW_ALL_HOSTS', '0') == '1'
 if ALLOW_ALL_HOSTS:
     ALLOWED_HOSTS = ['*']

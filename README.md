@@ -67,6 +67,23 @@ The Mel-RoFormer checkpoint is downloaded automatically on its first use into
 `pretrained_models/mel_roformer/`. Its Hugging Face revision is pinned in code
 for repeatable deployments.
 
+### GPU inference profiles
+
+GPU deployments use `GPU_PROFILE` to trade throughput for quality. The profile
+applies to all jobs on that worker, preventing users from exhausting shared GPU
+memory by selecting arbitrary settings in the browser.
+
+| Profile | Demucs overlap | RoFormer overlap | Intended use |
+| --- | --- | --- | --- |
+| `throughput` | 0.25 | 2 | Batch jobs on high-memory GPUs |
+| `balanced` (default) | 0.25 | 2 | General GPU serving |
+| `quality` | 0.5 | 4 | Fewer jobs, cleaner overlap boundaries |
+
+`ROFORMER_BATCH_SIZE`, `ROFORMER_NUM_OVERLAP`, `MEL_ROFORMER_NUM_OVERLAP`,
+`DEMUCS_OVERLAP`, and `GPU_MIXED_PRECISION` override the profile defaults.
+Start with `balanced`; only raise batch size after measuring the available GPU
+memory for the longest supported uploads.
+
 ## [Demo site](https://jeffreyca.github.io/spleeter-web/)
 
 **Homepage**
@@ -264,6 +281,12 @@ Here is a list of all the environment variables you can use to further customize
 | `CERTBOT_DOMAIN` | Domain for creating HTTPS certs using Let's Encrypt's Certbot. Docker only. |
 | `CERTBOT_EMAIL` | Email address for creating HTTPS certs using Let's Encrypt's Certbot. Docker only. |
 | `DEMUCS_SEGMENT_SIZE` | Length of each split for GPU separation. Default is `40`, which requires a around 7 GB of GPU memory. For GPUs with 2-4 GB of memory, experiment with lower values (minimum is `10`). Also recommended to set `PYTORCH_NO_CUDA_MEMORY_CACHING=1`. |
+| `GPU_PROFILE` | GPU inference profile: `throughput`, `balanced` (default), or `quality`. |
+| `GPU_MIXED_PRECISION` | Set to `0` to disable CUDA mixed-precision inference for RoFormer models. Default: `1`. |
+| `ROFORMER_BATCH_SIZE` | Override BS-RoFormer chunk batch size. Increase only when GPU memory permits. |
+| `ROFORMER_NUM_OVERLAP` | Override BS-RoFormer overlap count. More overlap improves boundary quality at a processing-time cost. |
+| `MEL_ROFORMER_NUM_OVERLAP` | Override Mel-RoFormer overlap count. More overlap improves boundary quality at a processing-time cost. |
+| `DEMUCS_OVERLAP` | Override Demucs overlap ratio for GPU profiles. |
 | `DEV_WEBSERVER_PORT` | Port that development webserver is mapped to on **host** machine. Docker only. |
 | `ENABLE_CROSS_ORIGIN_HEADERS` | Set to `1` to set `Cross-Origin-Embedder-Policy` and `Cross-Origin-Opener-Policy` headers which are required for exporting Dynamic Mixes in-browser. |
 | `NGINX_PORT` | Port that Nginx is mapped to on **host** machine for HTTP. Docker only. |
