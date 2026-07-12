@@ -16,6 +16,13 @@ COPY requirements.txt requirements-spleeter.txt /webapp/
 RUN pip install --upgrade pip wheel && pip install -r requirements.txt
 RUN pip install -r requirements-spleeter.txt --no-dependencies
 
+# SCNet has no PyPI package. Pin the official MIT-licensed source so its
+# architecture remains reproducible across image builds.
+ARG SCNET_COMMIT=5d95bf96b19c3eede63248d171efeca8e3abb948
+RUN git clone https://github.com/starrytong/SCNet.git /opt/scnet \
+    && git -C /opt/scnet checkout ${SCNET_COMMIT}
+ENV PYTHONPATH=/opt/scnet:${PYTHONPATH}
+
 # Hugging Face CLI
 ENV HF_CLI_BIN_DIR=/usr/local/bin
 RUN curl -LsSf https://hf.co/cli/install.sh | bash

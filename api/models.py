@@ -53,6 +53,7 @@ BS_ROFORMER_FAMILY = [
 
 MEL_ROFORMER_VOCALS = 'mel_roformer_vocals'
 MEL_ROFORMER_FAMILY = [MEL_ROFORMER_VOCALS]
+SCNET = 'scnet'
 
 DEMUCS4_HT = 'htdemucs'
 DEMUCS4_HT_FT = 'htdemucs_ft'
@@ -95,6 +96,7 @@ SEP_CHOICES = [
         (
             (MEL_ROFORMER_VOCALS, 'Mel-RoFormer Vocal Isolation'),
         )),
+    (SCNET, 'SCNet 4-stem'),
     (D3NET, 'D3Net'),
     (
         'demucs',
@@ -399,6 +401,8 @@ class StaticMix(models.Model):
             return [f'{self.get_bitrate_display()}']
         elif self.separator in MEL_ROFORMER_FAMILY:
             return [f'{self.get_bitrate_display()}', 'Vocals + accompaniment']
+        elif self.separator == SCNET:
+            return [f'{self.get_bitrate_display()}', '4 stems (SCNet)']
         elif self.separator == D3NET:
             return [f'{self.get_bitrate_display()}']
         elif self.separator in DEMUCS_FAMILY:
@@ -507,6 +511,8 @@ class DynamicMix(models.Model):
             return f'[{self.get_bitrate_display()},{self.separator}]'
         elif self.separator in MEL_ROFORMER_FAMILY:
             return f'[{self.get_bitrate_display()},{self.separator}]'
+        elif self.separator == SCNET:
+            return f'[{self.get_bitrate_display()},{self.separator}]'
         elif self.separator == D3NET:
             return f'[{self.get_bitrate_display()}]'
         elif self.separator in DEMUCS_FAMILY:
@@ -584,6 +590,8 @@ class DynamicMix(models.Model):
             return [f'{self.get_bitrate_display()}']
         elif self.separator in MEL_ROFORMER_FAMILY:
             return [f'{self.get_bitrate_display()}', 'Vocals + accompaniment']
+        elif self.separator == SCNET:
+            return [f'{self.get_bitrate_display()}', '4 stems (SCNet)']
         elif self.separator == D3NET:
             return [f'{self.get_bitrate_display()}']
         elif self.separator in DEMUCS_FAMILY:

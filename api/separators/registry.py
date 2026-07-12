@@ -51,6 +51,7 @@ _SPECS = (
           roformer_stem_mode='6stem'),
     _spec('mel_roformer_vocals', 'Mel-RoFormer Vocal Isolation', 'mel_roformer',
           VOCALS_AND_OTHER),
+    _spec('scnet', 'SCNet 4-stem', 'scnet', FOUR_STEMS),
     _spec('htdemucs', 'Demucs v4', 'demucs', FOUR_STEMS, requires_random_shifts=True),
     _spec('htdemucs_ft', 'Demucs v4 Fine-tuned', 'demucs', FOUR_STEMS,
           requires_random_shifts=True),
@@ -126,6 +127,9 @@ def build_separator(identifier: str, args: Dict, bitrate: int, cpu_separation: b
         from .mel_roformer_separator import MelRoformerSeparator
         return MelRoformerSeparator(cpu_separation=cpu_separation, output_format=bitrate,
                                     num_overlap=settings.MEL_ROFORMER_NUM_OVERLAP)
+    if spec.family == 'scnet':
+        from .scnet_separator import SCNetSeparator
+        return SCNetSeparator(cpu_separation=cpu_separation, output_format=bitrate)
     if spec.family == 'demucs':
         from .demucs_separator import DemucsSeparator
         return DemucsSeparator(spec.identifier, cpu_separation, bitrate,

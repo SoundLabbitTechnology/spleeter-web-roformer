@@ -24,12 +24,14 @@ const MODE_MODELS: Record<SeparationMode, Separator> = {
   fast: 'htdemucs',
   quality: 'bs_roformer_6s',
   vocal: 'mel_roformer_vocals',
+  efficient: 'scnet',
 };
 
 const MODE_DESCRIPTIONS: Record<SeparationMode, string> = {
   fast: 'Fast general-purpose separation into vocals, drums, bass, and other.',
   quality: 'Highest-quality six-stem separation with guitar and piano.',
   vocal: 'Vocal-specialist separation into vocals and accompaniment.',
+  efficient: 'Efficient four-stem separation with SCNet. Best for CPU-oriented batches.',
 };
 
 /** Three task-oriented separation presets for new mixes. */
@@ -78,6 +80,9 @@ class SeparatorFormGroup extends React.Component<Props, State> {
                 </ToggleButton>
                 <ToggleButton id="mode-vocal" variant="outline-secondary" value="vocal">
                   Vocal isolation
+                </ToggleButton>
+                <ToggleButton id="mode-efficient" variant="outline-secondary" value="efficient">
+                  Efficient SCNet
                 </ToggleButton>
               </ToggleButtonGroup>
               <Form.Text className="d-block mt-2" muted>

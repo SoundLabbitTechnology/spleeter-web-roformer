@@ -12,6 +12,8 @@ The app uses [Django](https://www.djangoproject.com/) for the backend API and [R
 - [BS-RoFormer](https://github.com/lucidrains/BS-RoFormer)
 - [Mel-Band RoFormer](https://arxiv.org/abs/2310.01809) vocal isolation, using the
   public [Kimberley Jensen checkpoint](https://huggingface.co/KimberleyJSN/melbandroformer)
+- [SCNet](https://github.com/starrytong/SCNet) four-stem separation, using the
+  authors' public base checkpoint
 
 **Retired models**:
 
@@ -59,6 +61,7 @@ New jobs use three task-oriented presets:
 - **Mel-RoFormer Vocal Isolation** — a vocal-specialist model that outputs
   **Vocals** and **Accompaniment**. This is intended for acapella and
   instrumental creation, not for splitting drums or bass individually.
+- **Efficient SCNet** — a four-stem model intended for CPU-oriented batch jobs.
 
 Older model variants remain supported by the backend so existing mixes and API
 clients keep working, but they are not shown in the new-mix preset selector.
@@ -73,6 +76,11 @@ Backend model contracts live in `api/separators/registry.py`. Each entry defines
 its stable API identifier, supported stems, argument validation, and lazy
 runtime construction. Add a new model there before exposing it in the frontend;
 this keeps worker output validation and static-mix selections consistent.
+
+SCNet source is pinned to an official commit in both Dockerfiles. Its public
+base checkpoint downloads on first SCNet use to `pretrained_models/scnet/`.
+For a local, non-Docker installation, clone the same commit to a directory on
+`PYTHONPATH` before starting the workers.
 
 ### GPU inference profiles
 
