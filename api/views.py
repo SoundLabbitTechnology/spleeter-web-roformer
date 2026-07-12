@@ -1,6 +1,8 @@
+import os
 from sys import platform
 
-from django.db.models import Q
+from django.conf import settings
+from django.db.models import Count, Q
 from django.db.models.deletion import ProtectedError
 from django.db.utils import IntegrityError
 from django.http import JsonResponse
@@ -22,6 +24,42 @@ This module defines Django views.
 # Windows users would need to use Celery with 'gevent', but 'gevent' does not support aborting in-progress tasks,
 # so the SIGTERM would still fail...
 KILL_SIGNAL = 'SIGTERM' if platform == 'win32' else 'SIGUSR1'
+
+
+class OperationsStatusView(APIView):
+    """Expose queue-facing job counts and inference-worker configuration."""
+
+    @staticmethod
+    def _status_counts(model):
+        counts = {status.label: 0 for status in TaskStatus}
+        for row in model.objects.values('status').annotate(total=Count('id')):
+            try:
+                counts[TaskStatus(row['status']).label] = row['total']
+            except ValueError:
+                # Preserve availability if an older database contains a stale value.
+                counts[str(row['status'])] = row['total']
+        return counts
+
+    def get(self, request):
+        static_counts = self._status_counts(StaticMix)
+        dynamic_counts = self._status_counts(DynamicMix)
+        return JsonResponse({
+            'separation': {
+                'queued': static_counts['Queued'] + dynamic_counts['Queued'],
+                'in_progress': static_counts['In Progress'] + dynamic_counts['In Progress'],
+                'done': static_counts['Done'] + dynamic_counts['Done'],
+                'error': static_counts['Error'] + dynamic_counts['Error'],
+            },
+            'youtube_import': self._status_counts(YTAudioDownloadTask),
+            'worker': {
+                'cpu_separation': settings.CPU_SEPARATION,
+                'gpu_profile': settings.GPU_PROFILE,
+                'mixed_precision': settings.GPU_MIXED_PRECISION,
+                'slow_queue_concurrency': int(
+                    os.getenv('CELERY_SLOW_QUEUE_CONCURRENCY', '1')),
+                'prefetch_multiplier': settings.CELERY_WORKER_PREFETCH_MULTIPLIER,
+            },
+        })
 
 class YouTubeSearchView(APIView):
     """View that processes YouTube video search queries."""

@@ -5,6 +5,7 @@ from django.conf.urls.static import static
 from . import views
 
 urlpatterns = [
+    path('api/operations/', views.OperationsStatusView.as_view()),
     path('api/search/', views.YouTubeSearchView.as_view()),
     path('api/source-file/all/', views.SourceFileListView.as_view()),
     path(

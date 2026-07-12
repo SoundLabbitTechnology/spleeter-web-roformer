@@ -99,6 +99,11 @@ memory by selecting arbitrary settings in the browser.
 Start with `balanced`; only raise batch size after measuring the available GPU
 memory for the longest supported uploads.
 
+`GET /api/operations/` exposes queued, in-progress, completed, and failed job
+counts together with the active worker profile. Celery uses a prefetch
+multiplier of one, so a GPU worker does not reserve several long separations
+while another worker is idle.
+
 ## [Demo site](https://jeffreyca.github.io/spleeter-web/)
 
 **Homepage**

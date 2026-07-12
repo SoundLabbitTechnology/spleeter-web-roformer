@@ -83,6 +83,9 @@ AWS_S3_OBJECT_PARAMETERS = {'ACL': 'public-read', 'ContentDisposition': 'attachm
 
 CELERY_BROKER_URL = os.getenv('CELERY_BROKER_URL', 'redis://localhost:6379/0')
 CELERY_RESULT_BACKEND = os.getenv('CELERY_RESULT_BACKEND', 'redis://localhost:6379/0')
+# Do not let one GPU worker reserve several long-running separation jobs. This
+# keeps queue latency predictable when more workers are added.
+CELERY_WORKER_PREFETCH_MULTIPLIER = 1
 CELERY_TASK_ROUTES = {
     'api.tasks.create_static_mix': {
         'queue': 'slow_queue'
