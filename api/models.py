@@ -54,6 +54,7 @@ BS_ROFORMER_FAMILY = [
 MEL_ROFORMER_VOCALS = 'mel_roformer_vocals'
 MEL_ROFORMER_FAMILY = [MEL_ROFORMER_VOCALS]
 SCNET = 'scnet'
+SEMANTIC_TEXT = 'semantic_text'
 
 DEMUCS4_HT = 'htdemucs'
 DEMUCS4_HT_FT = 'htdemucs_ft'
@@ -97,6 +98,7 @@ SEP_CHOICES = [
             (MEL_ROFORMER_VOCALS, 'Mel-RoFormer Vocal Isolation'),
         )),
     (SCNET, 'SCNet 4-stem'),
+    (SEMANTIC_TEXT, 'Natural-language target (remote GPU)'),
     (D3NET, 'D3Net'),
     (
         'demucs',
@@ -366,6 +368,9 @@ class StaticMix(models.Model):
         if self.separator in DEMUCS_FAMILY:
             random_shifts = self.separator_args['random_shifts']
             suffix += f',{random_shifts} shifts'
+        elif self.separator == SEMANTIC_TEXT:
+            prompt = str(self.separator_args.get('prompt', 'target')).strip()[:40]
+            suffix += f',prompt {prompt}'
         elif self.separator == XUMX:
             iterations = self.separator_args['iterations']
             softmask = self.separator_args['softmask']
@@ -403,6 +408,8 @@ class StaticMix(models.Model):
             return [f'{self.get_bitrate_display()}', 'Vocals + accompaniment']
         elif self.separator == SCNET:
             return [f'{self.get_bitrate_display()}', '4 stems (SCNet)']
+        elif self.separator == SEMANTIC_TEXT:
+            return [f'{self.get_bitrate_display()}', 'Prompt target + residual']
         elif self.separator == D3NET:
             return [f'{self.get_bitrate_display()}']
         elif self.separator in DEMUCS_FAMILY:
@@ -513,6 +520,9 @@ class DynamicMix(models.Model):
             return f'[{self.get_bitrate_display()},{self.separator}]'
         elif self.separator == SCNET:
             return f'[{self.get_bitrate_display()},{self.separator}]'
+        elif self.separator == SEMANTIC_TEXT:
+            prompt = str(self.separator_args.get('prompt', 'target')).strip()[:40]
+            return f'[{self.get_bitrate_display()},{self.separator},prompt {prompt}]'
         elif self.separator == D3NET:
             return f'[{self.get_bitrate_display()}]'
         elif self.separator in DEMUCS_FAMILY:
@@ -592,6 +602,8 @@ class DynamicMix(models.Model):
             return [f'{self.get_bitrate_display()}', 'Vocals + accompaniment']
         elif self.separator == SCNET:
             return [f'{self.get_bitrate_display()}', '4 stems (SCNet)']
+        elif self.separator == SEMANTIC_TEXT:
+            return [f'{self.get_bitrate_display()}', 'Prompt target + residual']
         elif self.separator == D3NET:
             return [f'{self.get_bitrate_display()}']
         elif self.separator in DEMUCS_FAMILY:

@@ -13,6 +13,8 @@ interface Props {
   handleModelChange: (newModel: string) => void;
   handleRandomShiftsChange: (newRandomShifts: number) => void;
   handleOutputFormatChange: (newOutputFormat: number) => void;
+  prompt: string;
+  handlePromptChange: (prompt: string) => void;
 }
 
 interface State {
@@ -44,6 +46,7 @@ class StaticMixModalForm extends React.Component<Props, State> {
     const { selectedModel } = this.state;
     switch (selectedModel) {
       case 'mel_roformer_vocals':
+      case 'semantic_text':
         return MusicPartMap2;
       case 'spleeter_5stems':
       case 'bs_roformer_5s_piano':
@@ -58,7 +61,7 @@ class StaticMixModalForm extends React.Component<Props, State> {
   };
 
   render(): JSX.Element {
-    const { song, handleCheckboxChange, handleRandomShiftsChange, handleOutputFormatChange } = this.props;
+    const { song, handleCheckboxChange, handleRandomShiftsChange, handleOutputFormatChange, prompt, handlePromptChange } = this.props;
     const MusicPartMap = this.getMusicPartMap();
 
     // Map part names to checkboxes
@@ -84,6 +87,8 @@ class StaticMixModalForm extends React.Component<Props, State> {
           handleModelChange={this.handleModelChange}
           handleRandomShiftsChange={handleRandomShiftsChange}
           handleOutputFormatChange={handleOutputFormatChange}
+          prompt={prompt}
+          handlePromptChange={handlePromptChange}
         />
         <Form.Group className="mt-3">
           <Form.Label>Parts to keep:</Form.Label>

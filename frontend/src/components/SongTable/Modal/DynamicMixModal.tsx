@@ -28,6 +28,7 @@ interface State {
    * Output bitrate.
    */
   outputFormat: number;
+  prompt: string;
   /**
    * Whether currently in process of creating mix.
    */
@@ -48,6 +49,7 @@ class DynamicMixModal extends React.Component<Props, State> {
       model: DEFAULT_MODEL,
       randomShifts: 0,
       outputFormat: DEFAULT_OUTPUT_FORMAT,
+      prompt: '',
       isCreating: false,
       errors: [],
     };
@@ -61,6 +63,7 @@ class DynamicMixModal extends React.Component<Props, State> {
       model: DEFAULT_MODEL,
       randomShifts: 0,
       outputFormat: DEFAULT_OUTPUT_FORMAT,
+      prompt: '',
       isCreating: false,
       errors: [],
     });
@@ -95,6 +98,7 @@ class DynamicMixModal extends React.Component<Props, State> {
       separator: this.state.model,
       separator_args: {
         random_shifts: this.state.randomShifts,
+        ...(this.state.prompt.trim() ? { prompt: this.state.prompt.trim() } : {}),
       },
       bitrate: this.state.outputFormat,
     };
@@ -137,6 +141,10 @@ class DynamicMixModal extends React.Component<Props, State> {
     console.log('Output format change:', newOutputFormat);
   };
 
+  handlePromptChange = (prompt: string): void => {
+    this.setState({ prompt });
+  };
+
   render(): JSX.Element | null {
     const { model, isCreating, errors } = this.state;
     const { show, song } = this.props;
@@ -157,6 +165,8 @@ class DynamicMixModal extends React.Component<Props, State> {
             handleModelChange={this.handleModelChange}
             handleRandomShiftsChange={this.handleRandomShiftsChange}
             handleOutputFormatChange={this.handleOutputFormatChange}
+            prompt={this.state.prompt}
+            handlePromptChange={this.handlePromptChange}
           />
           {slowCpuModel && <Alert variant="warning">This model has very long CPU separation times.</Alert>}
           {errors.length > 0 && (

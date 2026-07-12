@@ -10,6 +10,8 @@ interface Props {
   handleModelChange: (newModel: string) => void;
   handleRandomShiftsChange: (newRandomShifts: number) => void;
   handleOutputFormatChange: (newOutputFormatChange: number) => void;
+  prompt: string;
+  handlePromptChange: (prompt: string) => void;
 }
 
 /**
@@ -22,6 +24,8 @@ class DynamicMixModalForm extends React.Component<Props> {
       handleModelChange,
       handleRandomShiftsChange,
       handleOutputFormatChange,
+      prompt,
+      handlePromptChange,
     } = this.props;
 
     return (
@@ -32,6 +36,8 @@ class DynamicMixModalForm extends React.Component<Props> {
           handleModelChange={handleModelChange}
           handleRandomShiftsChange={handleRandomShiftsChange}
           handleOutputFormatChange={handleOutputFormatChange}
+          prompt={prompt}
+          handlePromptChange={handlePromptChange}
         />
       </Form>
     );

@@ -104,6 +104,22 @@ counts together with the active worker profile. Celery uses a prefetch
 multiplier of one, so a GPU worker does not reserve several long separations
 while another worker is idle.
 
+### Natural-language target separation
+
+The `semantic_text` backend mode accepts a prompt such as `lead vocal`,
+`acoustic guitar`, or `crowd noise`. It calls an external GPU service at
+`SEMANTIC_SEPARATOR_URL/separate` with multipart field `audio` and form field
+`prompt`; the service must return a WAV at the same sample rate and shape. The
+backend exposes the result as `vocals` and derives `other` by subtraction.
+This contract works with an AudioSep or SAM Audio service without placing their
+incompatible dependency stacks in the main worker image. The mode is disabled
+until a remote URL is configured and is not selected by default.
+
+Set `SEMANTIC_SEPARATOR_URL` on the API and Celery services to enable it. The
+remote service is deliberately not enabled by default: AudioSep and SAM Audio
+have different runtime/checkpoint requirements, and SAM Audio may require
+separate model access approval.
+
 ## [Demo site](https://jeffreyca.github.io/spleeter-web/)
 
 **Homepage**

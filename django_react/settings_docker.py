@@ -29,6 +29,8 @@ ROFORMER_BATCH_SIZE = max(1, int(os.getenv('ROFORMER_BATCH_SIZE', _gpu_defaults[
 ROFORMER_NUM_OVERLAP = max(1, int(os.getenv('ROFORMER_NUM_OVERLAP', _gpu_defaults['roformer_num_overlap'])))
 MEL_ROFORMER_NUM_OVERLAP = max(1, int(os.getenv('MEL_ROFORMER_NUM_OVERLAP', _gpu_defaults['mel_num_overlap'])))
 GPU_MIXED_PRECISION = os.getenv('GPU_MIXED_PRECISION', '1') == '1'
+SEMANTIC_SEPARATOR_URL = os.getenv('SEMANTIC_SEPARATOR_URL', '').strip()
+SEMANTIC_SEPARATOR_TIMEOUT = max(30, int(os.getenv('SEMANTIC_SEPARATOR_TIMEOUT', '900')))
 
 ALLOW_ALL_HOSTS = os.getenv('ALLOW_ALL_HOSTS', '0') == '1'
 if ALLOW_ALL_HOSTS:
