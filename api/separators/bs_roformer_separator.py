@@ -1,5 +1,6 @@
 import gc
 import subprocess
+from contextlib import nullcontext
 from pathlib import Path
 from typing import Dict
 
@@ -10,6 +11,7 @@ import yaml
 from omegaconf import OmegaConf
 from spleeter.audio.adapter import AudioAdapter
 from tqdm import tqdm
+from django.conf import settings
 
 from api.models import OutputFormat
 from api.util import output_format_to_ext, is_output_format_lossy
@@ -174,10 +176,10 @@ class BSRoformerSeparator:
         # Use model's stft_hop_length for segment calculation (not audio.hop_length)
         hop_length = self.config.model.stft_hop_length
         C = hop_length * (segment_size - 1)
-        N = self.config.inference.num_overlap
+        N = self.overlap
         step = int(C // N)
         fade_size = C // 10
-        batch_size = self.config.inference.batch_size
+        batch_size = self.batch_size
         
         # Convert to tensor
         mix_tensor = torch.tensor(mix, dtype=torch.float32)
@@ -208,7 +210,12 @@ class BSRoformerSeparator:
             total_segments += 1
             pos += step
         
-        with torch.inference_mode():
+        autocast_context = (
+            torch.autocast(device_type='cuda', dtype=torch.float16)
+            if self.device == 'cuda' and settings.GPU_MIXED_PRECISION
+            else nullcontext()
+        )
+        with torch.inference_mode(), autocast_context:
             req_shape = (S,) + tuple(mix_tensor.shape)
             result = torch.zeros(req_shape, dtype=torch.float32, device=device)
             counter = torch.zeros(req_shape, dtype=torch.float32, device=device)

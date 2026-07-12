@@ -32,7 +32,7 @@ class DemucsSeparator:
         self.model_dir = Path('pretrained_models')
         self.shifts = shifts
         self.split = True
-        self.overlap = 0.25
+        self.overlap = settings.DEMUCS_OVERLAP
         self.workers = 0
         self.verbose = True
         self.audio_bitrate = f'{output_format}k' if is_output_format_lossy(output_format) else None

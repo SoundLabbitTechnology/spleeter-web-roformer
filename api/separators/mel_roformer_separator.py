@@ -7,6 +7,7 @@ Hugging Face revision so deployments receive reproducible weights.
 
 import gc
 import subprocess
+from contextlib import nullcontext
 from pathlib import Path
 from typing import Dict
 
@@ -14,6 +15,7 @@ import numpy as np
 import torch
 import torch.nn.functional as F
 from bs_roformer import MelBandRoformer
+from django.conf import settings
 from spleeter.audio.adapter import AudioAdapter
 
 from api.models import OutputFormat
@@ -86,9 +88,11 @@ class MelRoformerSeparator:
     num_overlap = 2
 
     def __init__(self, cpu_separation=False,
-                 output_format=OutputFormat.MP3_256.value, model_path=None):
+                 output_format=OutputFormat.MP3_256.value, model_path=None,
+                 num_overlap=None):
         self.device = 'cpu' if cpu_separation else 'cuda'
         self.model_path = Path(model_path) if model_path else DEFAULT_MODEL_PATH
+        self.num_overlap = num_overlap or self.num_overlap
         self.audio_format = output_format_to_ext(output_format)
         self.audio_bitrate = (
             f'{output_format}k' if is_output_format_lossy(output_format) else None
@@ -121,7 +125,12 @@ class MelRoformerSeparator:
         result = torch.zeros_like(mix_tensor, device=self.device)
         counter = torch.zeros_like(mix_tensor, device=self.device)
 
-        with torch.inference_mode():
+        autocast_context = (
+            torch.autocast(device_type='cuda', dtype=torch.float16)
+            if self.device == 'cuda' and settings.GPU_MIXED_PRECISION
+            else nullcontext()
+        )
+        with torch.inference_mode(), autocast_context:
             for position in range(0, total_length, step):
                 part = mix_tensor[:, position:position + self.chunk_size]
                 length = part.shape[-1]
