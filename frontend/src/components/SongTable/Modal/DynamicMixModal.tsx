@@ -144,7 +144,7 @@ class DynamicMixModal extends React.Component<Props, State> {
       return null;
     }
 
-    const slowCpuModel = model.startsWith('bs_roformer');
+    const slowCpuModel = model.startsWith('bs_roformer') || model.startsWith('mel_roformer');
 
     return (
       <Modal size="lg" show={show} onHide={!isCreating ? this.onHide : undefined} onExited={this.onExited}>

@@ -11,6 +11,11 @@ const baseParts = {
 
 export const MusicPartMap4 = new Map(Object.entries(baseParts));
 
+export const MusicPartMap2 = new Map(Object.entries({
+  vocals: baseParts.vocals,
+  other: baseParts.other,
+}));
+
 export const MusicPartMap5Piano = new Map(Object.entries({ ...baseParts, piano: 'Piano' }));
 
 export const MusicPartMap5Guitar = new Map(Object.entries({ ...baseParts, guitar: 'Guitar' }));

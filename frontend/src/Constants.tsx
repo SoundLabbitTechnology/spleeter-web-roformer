@@ -3,6 +3,7 @@ export const DEFAULT_MODEL_FAMILY = 'bs_roformer';
 export const DEFAULT_SPLEETER_MODEL = 'spleeter';
 export const DEFAULT_DEMUCS_MODEL = 'htdemucs';
 export const DEFAULT_BS_ROFORMER_MODEL = 'bs_roformer';
+export const DEFAULT_MEL_ROFORMER_MODEL = 'mel_roformer_vocals';
 
 export const LOSSY_OUTPUT_FORMATS: [number, string][] = [
   [192, '192 kbps'],

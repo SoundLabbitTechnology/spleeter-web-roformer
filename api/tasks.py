@@ -14,13 +14,14 @@ from django.utils import timezone
 from .celery import app
 from .models import (DEMUCS_FAMILY, D3NET, SPLEETER, SPLEETER_PIANO, XUMX, BS_ROFORMER,
                      BS_ROFORMER_5S_GUITAR, BS_ROFORMER_5S_PIANO, BS_ROFORMER_6S,
-                     BS_ROFORMER_FAMILY,
+                     BS_ROFORMER_FAMILY, MEL_ROFORMER_FAMILY,
                      DynamicMix, SourceFile, StaticMix, TaskStatus,
                      YTAudioDownloadTask)
 from .separators.demucs_separator import DemucsSeparator
 from .separators.spleeter_separator import SpleeterSeparator
 from .separators.bs_roformer_separator import BSRoformerSeparator
-from .util import ALL_PARTS, ALL_PARTS_5_PIANO, ALL_PARTS_5_GUITAR, ALL_PARTS_6, output_format_to_ext, get_valid_filename
+from .separators.mel_roformer_separator import MelRoformerSeparator
+from .util import ALL_PARTS, ALL_PARTS_VOCALS_OTHER, ALL_PARTS_5_PIANO, ALL_PARTS_5_GUITAR, ALL_PARTS_6, output_format_to_ext, get_valid_filename
 from .youtubedl import download_audio, get_file_ext
 
 """
@@ -50,6 +51,9 @@ def get_separator(separator: str, separator_args: Dict, bitrate: int,
         }
         stem_mode = stem_mode_map.get(separator, '4stem')
         return BSRoformerSeparator(cpu_separation=cpu_separation, output_format=bitrate, stem_mode=stem_mode)
+    if separator in MEL_ROFORMER_FAMILY:
+        return MelRoformerSeparator(cpu_separation=cpu_separation,
+                                    output_format=bitrate)
     if separator in DEMUCS_FAMILY:
         random_shifts = separator_args.get('random_shifts', 0)
         return DemucsSeparator(separator, cpu_separation, bitrate,
@@ -104,6 +108,11 @@ def create_static_mix(static_mix_id):
             'bass': static_mix.bass,
             'other': static_mix.other
         }
+        if static_mix.separator in MEL_ROFORMER_FAMILY:
+            parts = {
+                'vocals': static_mix.vocals,
+                'other': static_mix.other,
+            }
         if static_mix.separator == SPLEETER_PIANO:
             parts['piano'] = static_mix.piano
         elif static_mix.separator == BS_ROFORMER_5S_GUITAR:
@@ -209,6 +218,8 @@ def create_dynamic_mix(dynamic_mix_id):
             return
 
         all_parts = ALL_PARTS_5_PIANO if dynamic_mix.separator == SPLEETER_PIANO else ALL_PARTS
+        if dynamic_mix.separator in MEL_ROFORMER_FAMILY:
+            all_parts = ALL_PARTS_VOCALS_OTHER
         if dynamic_mix.separator == BS_ROFORMER_5S_GUITAR:
             all_parts = ALL_PARTS_5_GUITAR
         elif dynamic_mix.separator == BS_ROFORMER_5S_PIANO:

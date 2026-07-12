@@ -51,6 +51,9 @@ BS_ROFORMER_FAMILY = [
     BS_ROFORMER, BS_ROFORMER_5S_GUITAR, BS_ROFORMER_5S_PIANO, BS_ROFORMER_6S
 ]
 
+MEL_ROFORMER_VOCALS = 'mel_roformer_vocals'
+MEL_ROFORMER_FAMILY = [MEL_ROFORMER_VOCALS]
+
 DEMUCS4_HT = 'htdemucs'
 DEMUCS4_HT_FT = 'htdemucs_ft'
 DEMUCS3_MMI = 'hdemucs_mmi'
@@ -86,6 +89,11 @@ SEP_CHOICES = [
             (BS_ROFORMER_5S_GUITAR, 'BS-RoFormer 5-stem (Guitar)'),
             (BS_ROFORMER_5S_PIANO, 'BS-RoFormer 5-stem (Piano)'),
             (BS_ROFORMER_6S, 'BS-RoFormer 6-stem'),
+        )),
+    (
+        'mel_roformer',
+        (
+            (MEL_ROFORMER_VOCALS, 'Mel-RoFormer Vocal Isolation'),
         )),
     (D3NET, 'D3Net'),
     (
@@ -389,6 +397,8 @@ class StaticMix(models.Model):
             #     BS_ROFORMER_6S: '6 stems',
             # }
             return [f'{self.get_bitrate_display()}']
+        elif self.separator in MEL_ROFORMER_FAMILY:
+            return [f'{self.get_bitrate_display()}', 'Vocals + accompaniment']
         elif self.separator == D3NET:
             return [f'{self.get_bitrate_display()}']
         elif self.separator in DEMUCS_FAMILY:
@@ -495,6 +505,8 @@ class DynamicMix(models.Model):
             return f'[{self.get_bitrate_display()},{self.separator}]'
         elif self.separator in BS_ROFORMER_FAMILY:
             return f'[{self.get_bitrate_display()},{self.separator}]'
+        elif self.separator in MEL_ROFORMER_FAMILY:
+            return f'[{self.get_bitrate_display()},{self.separator}]'
         elif self.separator == D3NET:
             return f'[{self.get_bitrate_display()}]'
         elif self.separator in DEMUCS_FAMILY:
@@ -570,6 +582,8 @@ class DynamicMix(models.Model):
             #     BS_ROFORMER_6S: '6 stems',
             # }
             return [f'{self.get_bitrate_display()}']
+        elif self.separator in MEL_ROFORMER_FAMILY:
+            return [f'{self.get_bitrate_display()}', 'Vocals + accompaniment']
         elif self.separator == D3NET:
             return [f'{self.get_bitrate_display()}']
         elif self.separator in DEMUCS_FAMILY:

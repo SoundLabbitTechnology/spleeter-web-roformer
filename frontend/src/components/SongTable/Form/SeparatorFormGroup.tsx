@@ -5,6 +5,7 @@ import { OverlayInjectedProps } from 'react-bootstrap/esm/Overlay';
 import {
   DEFAULT_BS_ROFORMER_MODEL,
   DEFAULT_DEMUCS_MODEL,
+  DEFAULT_MEL_ROFORMER_MODEL,
   DEFAULT_MODEL,
   DEFAULT_MODEL_FAMILY,
   DEFAULT_OUTPUT_FORMAT,
@@ -65,6 +66,8 @@ class SeparatorFormGroup extends React.Component<Props, State> {
       this.onModelSelectChange(DEFAULT_DEMUCS_MODEL);
     } else if (modelFamily === 'bs_roformer') {
       this.onModelSelectChange(DEFAULT_BS_ROFORMER_MODEL);
+    } else if (modelFamily === 'mel_roformer') {
+      this.onModelSelectChange(DEFAULT_MEL_ROFORMER_MODEL);
     }
   };
 
@@ -209,6 +212,21 @@ class SeparatorFormGroup extends React.Component<Props, State> {
       </Form.Group>
     );
 
+    const melRoformerVariantPicker = (
+      <Form.Group className="mt-2 mb-1">
+        <Form.Label>Variant:</Form.Label>
+        <Form.Row>
+          <Col>
+            <ToggleButtonGroup type="radio" name="options" value={selectedModel} onChange={this.onModelSelectChange}>
+              <ToggleButton id="variant-melroformer-vocals" variant="outline-secondary" value="mel_roformer_vocals">
+                Vocal isolation (vocals + accompaniment)
+              </ToggleButton>
+            </ToggleButtonGroup>
+          </Col>
+        </Form.Row>
+      </Form.Group>
+    );
+
     return (
       <Form.Group className={className} controlId="separator">
         <Form.Group className="mb-1">
@@ -223,6 +241,9 @@ class SeparatorFormGroup extends React.Component<Props, State> {
                 <ToggleButton id="family-bsroformer" variant="outline-secondary" value="bs_roformer">
                   BS-RoFormer
                 </ToggleButton>
+                <ToggleButton id="family-melroformer" variant="outline-secondary" value="mel_roformer">
+                  Mel-RoFormer
+                </ToggleButton>
                 <ToggleButton id="family-spleeter" variant="outline-secondary" value="spleeter">
                   Spleeter
                 </ToggleButton>
@@ -236,6 +257,7 @@ class SeparatorFormGroup extends React.Component<Props, State> {
         {selectedModelFamily === 'spleeter' && spleeterVariantPicker}
         {selectedModelFamily === 'demucs' && demucsVariantPicker}
         {selectedModelFamily === 'bs_roformer' && bsRoformerVariantPicker}
+        {selectedModelFamily === 'mel_roformer' && melRoformerVariantPicker}
         {selectedModelFamily === 'demucs' && (
           <Form.Group className="mb-0 mt-2">
             <Form.Label id={randomShiftId}>

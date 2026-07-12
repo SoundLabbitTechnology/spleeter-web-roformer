@@ -1,6 +1,6 @@
 import * as React from 'react';
 import { Form } from 'react-bootstrap';
-import { MusicPartMap4, MusicPartMap5Guitar, MusicPartMap5Piano, MusicPartMap6 } from '../../../models/MusicParts';
+import { MusicPartMap2, MusicPartMap4, MusicPartMap5Guitar, MusicPartMap5Piano, MusicPartMap6 } from '../../../models/MusicParts';
 import { SongData } from '../../../models/SongData';
 import SeparatorFormGroup from './SeparatorFormGroup';
 import SongInfoFormGroup from './SongInfoFormGroup';
@@ -42,6 +42,8 @@ class StaticMixModalForm extends React.Component<Props, State> {
   getMusicPartMap = (): Map<string, string> => {
     const { selectedModel } = this.state;
     switch (selectedModel) {
+      case 'mel_roformer_vocals':
+        return MusicPartMap2;
       case 'spleeter_5stems':
       case 'bs_roformer_5s_piano':
         return MusicPartMap5Piano;
