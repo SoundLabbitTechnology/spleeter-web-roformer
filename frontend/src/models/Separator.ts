@@ -1,4 +1,4 @@
-export type SeparatorFamily = 'spleeter' | 'd3net' | 'xumx' | 'demucs' | 'bs_roformer' | 'mel_roformer';
+export type SeparationMode = 'fast' | 'quality' | 'vocal';
 
 export type Separator =
   | 'spleeter'

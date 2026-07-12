@@ -50,13 +50,18 @@ The app uses [Django](https://www.djangoproject.com/) for the backend API and [R
 
 ### Separation modes
 
-For new jobs, choose the mode that fits the result you need:
+New jobs use three task-oriented presets:
 
-- **Demucs v4** — fast general-purpose four-stem separation.
-- **BS-RoFormer** — high-quality four-, five-, or six-stem separation.
+- **Fast Demucs** — `htdemucs` with zero random shifts for fast,
+  general-purpose four-stem separation.
+- **High-quality 6-stem** — `bs_roformer_6s` for vocals, drums, bass,
+  other, guitar, and piano.
 - **Mel-RoFormer Vocal Isolation** — a vocal-specialist model that outputs
   **Vocals** and **Accompaniment**. This is intended for acapella and
   instrumental creation, not for splitting drums or bass individually.
+
+Older model variants remain supported by the backend so existing mixes and API
+clients keep working, but they are not shown in the new-mix preset selector.
 
 The Mel-RoFormer checkpoint is downloaded automatically on its first use into
 `pretrained_models/mel_roformer/`. Its Hugging Face revision is pinned in code
