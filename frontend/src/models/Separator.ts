@@ -1,4 +1,4 @@
-export type SeparationMode = 'fast' | 'quality' | 'vocal' | 'efficient';
+export type SeparationMode = 'fast' | 'quality' | 'vocal' | 'efficient' | 'semantic';
 
 export type Separator =
   | 'spleeter'
@@ -11,6 +11,7 @@ export type Separator =
   | 'bs_roformer_6s'
   | 'mel_roformer_vocals'
   | 'scnet'
+  | 'semantic_text'
   // Demucs v4
   | 'htdemucs'
   | 'htdemucs_ft'
@@ -40,6 +41,7 @@ export const separatorLabelMap = {
   bs_roformer_6s: 'BS-RoFormer 6-stem',
   mel_roformer_vocals: 'Mel-RoFormer Vocal Isolation',
   scnet: 'SCNet 4-stem',
+  semantic_text: 'Natural-language target',
   d3net: 'D3Net (legacy)',
   xumx: 'X-UMX (legacy)',
   // Demucs v4

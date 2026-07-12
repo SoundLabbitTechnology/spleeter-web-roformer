@@ -13,6 +13,8 @@ interface Props {
   handleModelChange: (newModel: string) => void;
   handleRandomShiftsChange: (newRandomShifts: number) => void;
   handleOutputFormatChange: (newOutputFormat: number) => void;
+  prompt: string;
+  handlePromptChange: (prompt: string) => void;
 }
 
 interface State {
@@ -25,6 +27,7 @@ const MODE_MODELS: Record<SeparationMode, Separator> = {
   quality: 'bs_roformer_6s',
   vocal: 'mel_roformer_vocals',
   efficient: 'scnet',
+  semantic: 'semantic_text',
 };
 
 const MODE_DESCRIPTIONS: Record<SeparationMode, string> = {
@@ -32,6 +35,7 @@ const MODE_DESCRIPTIONS: Record<SeparationMode, string> = {
   quality: 'Highest-quality six-stem separation with guitar and piano.',
   vocal: 'Vocal-specialist separation into vocals and accompaniment.',
   efficient: 'Efficient four-stem separation with SCNet. Best for CPU-oriented batches.',
+  semantic: 'Describe the target sound in natural language. Output is target plus residual.',
 };
 
 /** Three task-oriented separation presets for new mixes. */
@@ -59,7 +63,7 @@ class SeparatorFormGroup extends React.Component<Props, State> {
 
   render(): JSX.Element {
     const { selectedMode, output_format: bitrate } = this.state;
-    const { className } = this.props;
+    const { className, prompt, handlePromptChange } = this.props;
 
     return (
       <Form.Group className={className} controlId="separator">
@@ -84,10 +88,23 @@ class SeparatorFormGroup extends React.Component<Props, State> {
                 <ToggleButton id="mode-efficient" variant="outline-secondary" value="efficient">
                   Efficient SCNet
                 </ToggleButton>
+                <ToggleButton id="mode-semantic" variant="outline-secondary" value="semantic">
+                  Prompt target
+                </ToggleButton>
               </ToggleButtonGroup>
               <Form.Text className="d-block mt-2" muted>
                 {MODE_DESCRIPTIONS[selectedMode]}
               </Form.Text>
+              {selectedMode === 'semantic' && (
+                <Form.Control
+                  className="mt-2"
+                  type="text"
+                  maxLength={240}
+                  value={prompt}
+                  placeholder="e.g. lead vocal, acoustic guitar, crowd noise"
+                  onChange={(event: React.ChangeEvent<HTMLInputElement>) => handlePromptChange(event.target.value)}
+                />
+              )}
             </Col>
           </Form.Row>
         </Form.Group>

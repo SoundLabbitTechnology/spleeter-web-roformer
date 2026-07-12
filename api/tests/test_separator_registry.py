@@ -20,3 +20,10 @@ class SeparatorRegistryTests(unittest.TestCase):
     def test_retired_models_are_rejected_for_new_jobs(self):
         with self.assertRaisesRegex(ValueError, 'no longer available'):
             validate_separator_args('d3net', {})
+
+    def test_semantic_mode_requires_a_bounded_prompt(self):
+        validate_separator_args('semantic_text', {'prompt': 'lead vocal'})
+        with self.assertRaisesRegex(ValueError, 'prompt'):
+            validate_separator_args('semantic_text', {})
+        with self.assertRaisesRegex(ValueError, '240'):
+            validate_separator_args('semantic_text', {'prompt': 'x' * 241})

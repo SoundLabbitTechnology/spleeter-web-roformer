@@ -28,6 +28,7 @@ interface State {
    * Output format/bitrate.
    */
   outputFormat: number;
+  prompt: string;
   /**
    * Whether to include vocals.
    */
@@ -72,6 +73,7 @@ class StaticMixModal extends React.Component<Props, State> {
       model: DEFAULT_MODEL,
       randomShifts: 0,
       outputFormat: DEFAULT_OUTPUT_FORMAT,
+      prompt: '',
       vocals: false, // Include vocals
       drums: false, // Include drums
       bass: false, // Include bass
@@ -91,6 +93,7 @@ class StaticMixModal extends React.Component<Props, State> {
       model: DEFAULT_MODEL,
       randomShifts: 0,
       outputFormat: DEFAULT_OUTPUT_FORMAT,
+      prompt: '',
       vocals: false,
       drums: false,
       bass: false,
@@ -131,6 +134,7 @@ class StaticMixModal extends React.Component<Props, State> {
       separator: this.state.model,
       separator_args: {
         random_shifts: this.state.randomShifts,
+        ...(this.state.prompt.trim() ? { prompt: this.state.prompt.trim() } : {}),
       },
       bitrate: this.state.outputFormat,
       vocals: this.state.vocals,
@@ -184,6 +188,10 @@ class StaticMixModal extends React.Component<Props, State> {
     console.log('Output format change:', newOutputFormat);
   };
 
+  handlePromptChange = (prompt: string): void => {
+    this.setState({ prompt });
+  };
+
   render(): JSX.Element | null {
     const { model, vocals, drums, bass, other, guitar, piano, errors, isCreating } = this.state;
     const { show, song } = this.props;
@@ -194,7 +202,7 @@ class StaticMixModal extends React.Component<Props, State> {
     // Display error if all or no parts are checked
     let allChecked = vocals && drums && bass && other;
     let noneChecked = !(vocals || drums || bass || other);
-    if (model === 'mel_roformer_vocals') {
+    if (model === 'mel_roformer_vocals' || model === 'semantic_text') {
       allChecked = vocals && other;
       noneChecked = !(vocals || other);
     } else if (model === 'spleeter_5stems' || model === 'bs_roformer_5s_piano') {
@@ -222,6 +230,8 @@ class StaticMixModal extends React.Component<Props, State> {
             handleModelChange={this.handleModelChange}
             handleRandomShiftsChange={this.handleRandomShiftsChange}
             handleOutputFormatChange={this.handleOutputFormatChange}
+            prompt={this.state.prompt}
+            handlePromptChange={this.handlePromptChange}
           />
           {allChecked && <Alert variant="warning">You must leave at least one part unchecked.</Alert>}
           {noneChecked && <Alert variant="warning">You must check at least one part.</Alert>}

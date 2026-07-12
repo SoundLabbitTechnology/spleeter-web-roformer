@@ -30,6 +30,8 @@ ROFORMER_NUM_OVERLAP = max(1, int(os.getenv('ROFORMER_NUM_OVERLAP', _gpu_default
 MEL_ROFORMER_NUM_OVERLAP = max(1, int(os.getenv('MEL_ROFORMER_NUM_OVERLAP', _gpu_defaults['mel_num_overlap'])))
 SCNET_OVERLAP = min(0.9, max(0.1, float(os.getenv('SCNET_OVERLAP', '0.5'))))
 GPU_MIXED_PRECISION = os.getenv('GPU_MIXED_PRECISION', '1') == '1'
+SEMANTIC_SEPARATOR_URL = os.getenv('SEMANTIC_SEPARATOR_URL', '').strip()
+SEMANTIC_SEPARATOR_TIMEOUT = max(30, int(os.getenv('SEMANTIC_SEPARATOR_TIMEOUT', '900')))
 
 ALLOW_ALL_HOSTS = os.getenv('ALLOW_ALL_HOSTS', '0') == '1'
 if ALLOW_ALL_HOSTS:

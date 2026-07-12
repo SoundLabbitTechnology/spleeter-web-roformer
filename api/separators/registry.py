@@ -52,6 +52,8 @@ _SPECS = (
     _spec('mel_roformer_vocals', 'Mel-RoFormer Vocal Isolation', 'mel_roformer',
           VOCALS_AND_OTHER),
     _spec('scnet', 'SCNet 4-stem', 'scnet', FOUR_STEMS),
+    _spec('semantic_text', 'Natural-language target (remote GPU)', 'semantic',
+          VOCALS_AND_OTHER),
     _spec('htdemucs', 'Demucs v4', 'demucs', FOUR_STEMS, requires_random_shifts=True),
     _spec('htdemucs_ft', 'Demucs v4 Fine-tuned', 'demucs', FOUR_STEMS,
           requires_random_shifts=True),
@@ -106,6 +108,12 @@ def validate_separator_args(identifier: str, args: Dict) -> None:
             raise ValueError("Must include 'random_shifts' argument.") from exc
         if not isinstance(shifts, int) or shifts < 0:
             raise ValueError('Random shifts must be a non-negative integer.')
+    if spec.family == 'semantic':
+        prompt = args.get('prompt', '')
+        if not isinstance(prompt, str) or not prompt.strip():
+            raise ValueError("Must include a non-empty 'prompt' argument.")
+        if len(prompt.strip()) > 240:
+            raise ValueError('Prompt must be 240 characters or fewer.')
 
 
 def build_separator(identifier: str, args: Dict, bitrate: int, cpu_separation: bool,
@@ -130,6 +138,11 @@ def build_separator(identifier: str, args: Dict, bitrate: int, cpu_separation: b
     if spec.family == 'scnet':
         from .scnet_separator import SCNetSeparator
         return SCNetSeparator(cpu_separation=cpu_separation, output_format=bitrate)
+    if spec.family == 'semantic':
+        from .semantic_separator import SemanticSeparator
+        return SemanticSeparator(
+            prompt=args['prompt'], cpu_separation=cpu_separation,
+            output_format=bitrate)
     if spec.family == 'demucs':
         from .demucs_separator import DemucsSeparator
         return DemucsSeparator(spec.identifier, cpu_separation, bitrate,
