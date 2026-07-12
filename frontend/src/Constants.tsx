@@ -1,8 +1,5 @@
-export const DEFAULT_MODEL = 'bs_roformer';
-export const DEFAULT_MODEL_FAMILY = 'bs_roformer';
-export const DEFAULT_SPLEETER_MODEL = 'spleeter';
-export const DEFAULT_DEMUCS_MODEL = 'htdemucs';
-export const DEFAULT_BS_ROFORMER_MODEL = 'bs_roformer';
+export const DEFAULT_MODEL = 'bs_roformer_6s';
+export const DEFAULT_SEPARATION_MODE = 'quality';
 
 export const LOSSY_OUTPUT_FORMATS: [number, string][] = [
   [192, '192 kbps'],
@@ -15,7 +12,6 @@ export const LOSSLESS_OUTPUT_FORMATS: [number, string][] = [
   [1, 'FLAC'],
 ];
 export const DEFAULT_OUTPUT_FORMAT = 256;
-export const MAX_RANDOM_SHIFT = 50;
 export const FADE_DURATION_MS = 300;
 export const FADE_DURATION_S = 0.3;
 

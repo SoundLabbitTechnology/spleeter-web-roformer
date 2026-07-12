@@ -194,7 +194,10 @@ class StaticMixModal extends React.Component<Props, State> {
     // Display error if all or no parts are checked
     let allChecked = vocals && drums && bass && other;
     let noneChecked = !(vocals || drums || bass || other);
-    if (model === 'spleeter_5stems' || model === 'bs_roformer_5s_piano') {
+    if (model === 'mel_roformer_vocals') {
+      allChecked = vocals && other;
+      noneChecked = !(vocals || other);
+    } else if (model === 'spleeter_5stems' || model === 'bs_roformer_5s_piano') {
       allChecked = allChecked && piano;
       noneChecked = noneChecked && !piano;
     } else if (model === 'bs_roformer_5s_guitar') {
@@ -205,7 +208,7 @@ class StaticMixModal extends React.Component<Props, State> {
       noneChecked = noneChecked && !guitar && !piano;
     }
 
-    const slowCpuModel = model.startsWith('bs_roformer');
+    const slowCpuModel = model.startsWith('bs_roformer') || model.startsWith('mel_roformer');
 
     return (
       <Modal size="lg" show={show} onHide={!isCreating ? this.onHide : undefined} onExited={this.onExited}>

@@ -10,6 +10,8 @@ The app uses [Django](https://www.djangoproject.com/) for the backend API and [R
 - [Spleeter](https://github.com/deezer/spleeter) (`4stems-model` and `5stems-model`)
 - [Demucs v3 and v4](https://github.com/facebookresearch/demucs)
 - [BS-RoFormer](https://github.com/lucidrains/BS-RoFormer)
+- [Mel-Band RoFormer](https://arxiv.org/abs/2310.01809) vocal isolation, using the
+  public [Kimberley Jensen checkpoint](https://huggingface.co/KimberleyJSN/melbandroformer)
 
 **Retired models**:
 
@@ -45,6 +47,25 @@ The app uses [Django](https://www.djangoproject.com/) for the backend API and [R
 - Clean and responsive UI
 - Support for GPU separation
 - Fully Dockerized
+
+### Separation modes
+
+New jobs use three task-oriented presets:
+
+- **Fast Demucs** — `htdemucs` with zero random shifts for fast,
+  general-purpose four-stem separation.
+- **High-quality 6-stem** — `bs_roformer_6s` for vocals, drums, bass,
+  other, guitar, and piano.
+- **Mel-RoFormer Vocal Isolation** — a vocal-specialist model that outputs
+  **Vocals** and **Accompaniment**. This is intended for acapella and
+  instrumental creation, not for splitting drums or bass individually.
+
+Older model variants remain supported by the backend so existing mixes and API
+clients keep working, but they are not shown in the new-mix preset selector.
+
+The Mel-RoFormer checkpoint is downloaded automatically on its first use into
+`pretrained_models/mel_roformer/`. Its Hugging Face revision is pinned in code
+for repeatable deployments.
 
 ## [Demo site](https://jeffreyca.github.io/spleeter-web/)
 

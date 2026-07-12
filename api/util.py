@@ -3,6 +3,7 @@ import re
 from api.models import OutputFormat
 
 ALL_PARTS = ['vocals', 'other', 'bass', 'drums']
+ALL_PARTS_VOCALS_OTHER = ['vocals', 'other']
 ALL_PARTS_5_PIANO = ['vocals', 'other', 'piano', 'bass', 'drums']
 ALL_PARTS_5_GUITAR = ['vocals', 'other', 'guitar', 'bass', 'drums']
 ALL_PARTS_6 = ['vocals', 'other', 'piano', 'guitar', 'bass', 'drums']

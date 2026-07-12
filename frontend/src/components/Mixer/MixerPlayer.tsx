@@ -123,9 +123,9 @@ class MixerPlayer extends React.Component<Props, State> {
       this.onMuteClick('vocals');
     } else if (event.key === '2' || event.key === '@') {
       this.onMuteClick('accomp');
-    } else if (event.key === '3' || event.key === '#') {
+    } else if (this.hasBass() && (event.key === '3' || event.key === '#')) {
       this.onMuteClick('bass');
-    } else if (event.key === '4' || event.key === '$') {
+    } else if (this.hasDrums() && (event.key === '4' || event.key === '$')) {
       this.onMuteClick('drums');
     } else if (this.hasGuitar() && (event.key === '5' || event.key === '%')) {
       this.onMuteClick('guitar');
@@ -140,9 +140,9 @@ class MixerPlayer extends React.Component<Props, State> {
       this.onSoloClick('vocals', !event.ctrlKey && !event.metaKey && !event.shiftKey);
     } else if (event.key.toLowerCase() === 'w') {
       this.onSoloClick('accomp', !event.ctrlKey && !event.metaKey && !event.shiftKey);
-    } else if (event.key.toLowerCase() === 'e') {
+    } else if (this.hasBass() && event.key.toLowerCase() === 'e') {
       this.onSoloClick('bass', !event.ctrlKey && !event.metaKey && !event.shiftKey);
-    } else if (event.key.toLowerCase() === 'r') {
+    } else if (this.hasDrums() && event.key.toLowerCase() === 'r') {
       this.onSoloClick('drums', !event.ctrlKey && !event.metaKey && !event.shiftKey);
     } else if (this.hasGuitar() && event.key.toLowerCase() === 't') {
       this.onSoloClick('guitar', !event.ctrlKey && !event.metaKey && !event.shiftKey);
@@ -170,6 +170,14 @@ class MixerPlayer extends React.Component<Props, State> {
     return Boolean(this.props.data?.piano_url);
   };
 
+  hasBass = (): boolean => {
+    return Boolean(this.props.data?.bass_url);
+  };
+
+  hasDrums = (): boolean => {
+    return Boolean(this.props.data?.drums_url);
+  };
+
   hasGuitar = (): boolean => {
     return Boolean(this.props.data?.guitar_url);
   };
@@ -181,9 +189,13 @@ class MixerPlayer extends React.Component<Props, State> {
     const urlMap: ToneAudioBuffersUrlMap = {
       vocals: data?.vocals_url ?? '',
       accomp: data?.other_url ?? '',
-      drums: data?.drums_url ?? '',
-      bass: data?.bass_url ?? '',
     };
+    if (this.hasBass()) {
+      urlMap['bass'] = data?.bass_url ?? '';
+    }
+    if (this.hasDrums()) {
+      urlMap['drums'] = data?.drums_url ?? '';
+    }
     if (data?.piano_url && data.piano_url !== '') {
       urlMap['piano'] = data.piano_url;
     }
@@ -262,9 +274,7 @@ class MixerPlayer extends React.Component<Props, State> {
 
     if (
       !this.props.data?.vocals_url ||
-      !this.props.data?.other_url ||
-      !this.props.data?.bass_url ||
-      !this.props.data?.drums_url
+      !this.props.data?.other_url
     ) {
       this.setState({
         exportError: 'Unexpected error (2).',
@@ -276,8 +286,8 @@ class MixerPlayer extends React.Component<Props, State> {
     const vocalsDb = this.tonePlayers.player('vocals').volume.value;
     const accompDb = this.tonePlayers.player('accomp').volume.value;
     const pianoDb = this.hasPiano() ? this.tonePlayers.player('piano').volume.value : -Infinity;
-    const bassDb = this.tonePlayers.player('bass').volume.value;
-    const drumsDb = this.tonePlayers.player('drums').volume.value;
+    const bassDb = this.hasBass() ? this.tonePlayers.player('bass').volume.value : -Infinity;
+    const drumsDb = this.hasDrums() ? this.tonePlayers.player('drums').volume.value : -Infinity;
     const guitarDb = this.hasGuitar() ? this.tonePlayers.player('guitar').volume.value : -Infinity;
     const vocalsVolArg = vocalsDb === -Infinity ? '0' : `${vocalsDb}dB`;
     const accompVolArg = accompDb === -Infinity ? '0' : `${accompDb}dB`;
@@ -300,9 +310,29 @@ class MixerPlayer extends React.Component<Props, State> {
     const drumsFile = 'drums.' + ext;
     const guitarFile = 'guitar.' + ext;
     const outFile = 'output.' + ext;
+    const bitrate = this.props.data?.bitrate ?? DEFAULT_OUTPUT_FORMAT;
 
     ffmpeg.FS('writeFile', vocalsFile, await fetchFile(this.props.data.vocals_url));
     ffmpeg.FS('writeFile', otherFile, await fetchFile(this.props.data.other_url));
+    if (!this.hasBass() && !this.hasDrums()) {
+      await ffmpeg.run(
+        '-i', vocalsFile,
+        '-i', otherFile,
+        '-filter_complex',
+        `[0:a]volume=${vocalsVolArg}[a0];[1:a]volume=${accompVolArg}[a1];[a0][a1]amix=inputs=2:duration=first:normalize=0[a]`,
+        isLossless ? '-sample_fmt' : '-b:a',
+        isLossless ? 's16' : `${bitrate}k`,
+        '-map', '[a]', outFile,
+      );
+      this.setState({ isExporting: false });
+      const data = ffmpeg.FS('readFile', outFile);
+      const url = URL.createObjectURL(new Blob([data.buffer]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `${mixName}.${ext}`;
+      link.click();
+      return;
+    }
     ffmpeg.FS('writeFile', bassFile, await fetchFile(this.props.data.bass_url));
     ffmpeg.FS('writeFile', drumsFile, await fetchFile(this.props.data.drums_url));
     if (this.hasPiano()) {
@@ -311,8 +341,6 @@ class MixerPlayer extends React.Component<Props, State> {
     if (this.hasGuitar()) {
       ffmpeg.FS('writeFile', guitarFile, await fetchFile(this.props.data.guitar_url));
     }
-
-    const bitrate = this.props.data?.bitrate ?? DEFAULT_OUTPUT_FORMAT;
 
     let args: string[];
     if (this.hasPiano() && this.hasGuitar()) {
@@ -432,8 +460,12 @@ class MixerPlayer extends React.Component<Props, State> {
         await Tone.start();
         this.tonePlayers?.player('vocals').sync().start(0, 0);
         this.tonePlayers?.player('accomp').sync().start(0, 0);
-        this.tonePlayers?.player('bass').sync().start(0, 0);
-        this.tonePlayers?.player('drums').sync().start(0, 0);
+        if (this.hasBass()) {
+          this.tonePlayers?.player('bass').sync().start(0, 0);
+        }
+        if (this.hasDrums()) {
+          this.tonePlayers?.player('drums').sync().start(0, 0);
+        }
         if (this.hasPiano()) {
           this.tonePlayers?.player('piano').sync().start(0, 0);
         }
@@ -483,7 +515,13 @@ class MixerPlayer extends React.Component<Props, State> {
   };
 
   isNoneSoloed = (soloStatus: SoloStatus = this.state.soloStatus): boolean => {
-    let result = !soloStatus.vocals && !soloStatus.accomp && !soloStatus.bass && !soloStatus.drums;
+    let result = !soloStatus.vocals && !soloStatus.accomp;
+    if (this.hasBass()) {
+      result = result && !soloStatus.bass;
+    }
+    if (this.hasDrums()) {
+      result = result && !soloStatus.drums;
+    }
     if (this.hasPiano()) {
       result = result && !soloStatus.piano;
     }
@@ -582,6 +620,12 @@ class MixerPlayer extends React.Component<Props, State> {
         continue;
       }
       if (part === 'guitar' && !this.hasGuitar()) {
+        continue;
+      }
+      if (part === 'bass' && !this.hasBass()) {
+        continue;
+      }
+      if (part === 'drums' && !this.hasDrums()) {
         continue;
       }
       const player = this.tonePlayers.player(part);
@@ -694,28 +738,32 @@ class MixerPlayer extends React.Component<Props, State> {
           onSoloClick={this.onSoloClick}
           onVolChange={this.onVolChange}
         />
-        <VolumeUI
-          id="bass"
-          url={data?.bass_url ?? ''}
-          disabled={!isReady}
-          isActive={!muteStatus.bass && (soloStatus.bass || noneSoloed)}
-          isSoloed={soloStatus.bass}
-          isMuted={muteStatus.bass}
-          onMuteClick={this.onMuteClick}
-          onSoloClick={this.onSoloClick}
-          onVolChange={this.onVolChange}
-        />
-        <VolumeUI
-          id="drums"
-          url={data?.drums_url ?? ''}
-          disabled={!isReady}
-          isActive={!muteStatus.drums && (soloStatus.drums || noneSoloed)}
-          isSoloed={soloStatus.drums}
-          isMuted={muteStatus.drums}
-          onMuteClick={this.onMuteClick}
-          onSoloClick={this.onSoloClick}
-          onVolChange={this.onVolChange}
-        />
+        {this.hasBass() && (
+          <VolumeUI
+            id="bass"
+            url={data?.bass_url ?? ''}
+            disabled={!isReady}
+            isActive={!muteStatus.bass && (soloStatus.bass || noneSoloed)}
+            isSoloed={soloStatus.bass}
+            isMuted={muteStatus.bass}
+            onMuteClick={this.onMuteClick}
+            onSoloClick={this.onSoloClick}
+            onVolChange={this.onVolChange}
+          />
+        )}
+        {this.hasDrums() && (
+          <VolumeUI
+            id="drums"
+            url={data?.drums_url ?? ''}
+            disabled={!isReady}
+            isActive={!muteStatus.drums && (soloStatus.drums || noneSoloed)}
+            isSoloed={soloStatus.drums}
+            isMuted={muteStatus.drums}
+            onMuteClick={this.onMuteClick}
+            onSoloClick={this.onSoloClick}
+            onVolChange={this.onVolChange}
+          />
+        )}
         {this.hasGuitar() && (
           <VolumeUI
             id="guitar"

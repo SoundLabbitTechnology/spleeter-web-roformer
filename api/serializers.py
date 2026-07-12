@@ -132,10 +132,14 @@ class FullStaticMixSerializer(serializers.ModelSerializer):
 
         :param data: Request data
         """
-        all_checked = data['vocals'] and data['drums'] and data[
-            'bass'] and data['other']
-        none_checked = not (data['vocals'] or data['drums'] or data['bass']
-                            or data['other'])
+        if data['separator'] in MEL_ROFORMER_FAMILY:
+            all_checked = data['vocals'] and data['other']
+            none_checked = not (data['vocals'] or data['other'])
+        else:
+            all_checked = data['vocals'] and data['drums'] and data[
+                'bass'] and data['other']
+            none_checked = not (data['vocals'] or data['drums'] or data['bass']
+                                or data['other'])
 
         if data['separator'] == SPLEETER_PIANO:
             all_checked = all_checked and data['piano']
