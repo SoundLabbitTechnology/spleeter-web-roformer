@@ -32,7 +32,7 @@ const VolumeUI = (props: Props): JSX.Element => {
     props.onSoloClick(props.id, !event.ctrlKey && !event.metaKey && !event.shiftKey);
   };
 
-  const onVolChange = (value: number | number[] | undefined | null): void => {
+  const onVolChange = (value: number | readonly number[], _index: number): void => {
     if (typeof value === 'number') {
       props.onVolChange(props.id, value);
     }

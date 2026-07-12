@@ -22,7 +22,7 @@ click-repl==0.3.0
 cloudpickle==3.1.2
 cryptography==46.0.3
 demucs==4.0.1
-Django==4.2.26
+Django==5.2.16
 django-picklefield==3.4.0
 django-storages==1.14.6
 django-webpack-loader==1.8.1
