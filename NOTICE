@@ -1,0 +1,16 @@
+Spleeter Web
+Copyright (c) 2023 Jeffrey Chen
+Copyright (c) 2026 Sound Labbit Technology
+
+This product includes software originally developed as Spleeter Web
+(https://github.com/JeffreyCA/spleeter-web) by Jeffrey Chen.
+
+This repository is a fork maintained by Sound Labbit Technology
+(https://www.soundlabbittechnology.co.jp/). It is not an official
+distribution of the upstream project.
+
+Upstream and this fork are provided under the MIT License. See the LICENSE
+file for the full license text.
+
+Third-party models and libraries used by this project may have their own
+licenses. Refer to their upstream repositories and documentation for details.

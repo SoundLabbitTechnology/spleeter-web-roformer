@@ -3,6 +3,30 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [Unreleased] - Sound Labbit Technology fork
+
+Changes in this fork relative to upstream
+[JeffreyCA/spleeter-web](https://github.com/JeffreyCA/spleeter-web) `v4.1.0`
+and later upstream commits. This fork is maintained by Sound Labbit Technology
+and is **not** an official upstream release.
+
+### Added
+- Task-oriented separation presets: Fast Demucs, High-quality 6-stem
+  (`bs_roformer_6s`), Mel-RoFormer vocal isolation, and Efficient SCNet
+- Mel-Band RoFormer vocal isolation using the Kimberley Jensen checkpoint
+- SCNet four-stem separation using the authors' public base checkpoint
+- Centralized separator model registry (`api/separators/registry.py`)
+- GPU inference profiles via `GPU_PROFILE`
+  (`throughput` / `balanced` / `quality`)
+- Natural-language target separation gateway (`semantic_text`) via
+  `SEMANTIC_SEPARATOR_URL`
+- Separation queue / operations status endpoint (`GET /api/operations/`)
+- Pull request validation GitHub Actions workflow
+
+### Changed
+- Django and related dependency upgrades for this fork
+- README attribution clarifying fork relationship with upstream
+
 ## [v4.1.0] - 2025-11-28
 
 ### Added
@@ -435,7 +459,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 Undocumented
 
 
-[Unreleased]: https://github.com/JeffreyCA/spleeter-web/compare/v4.1.0...HEAD
+[Unreleased]: https://github.com/SoundLabbitTechnology/spleeter-web-roformer/compare/v4.1.0...HEAD
 [v4.1.0]: https://github.com/JeffreyCA/spleeter-web/compare/v4.0.0...v4.1.0
 [v4.0.0]: https://github.com/JeffreyCA/spleeter-web/compare/v3.21.1...v4.0.0
 [v3.21.1]: https://github.com/JeffreyCA/spleeter-web/compare/v3.21.0...v3.21.1

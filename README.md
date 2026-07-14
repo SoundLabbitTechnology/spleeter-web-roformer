@@ -1,5 +1,36 @@
-# Spleeter Web
-[![Latest release](https://img.shields.io/github/v/release/JeffreyCA/spleeter-web?label=latest%20release)](https://github.com/JeffreyCA/spleeter-web/releases) [![Commits since latest release](https://img.shields.io/github/commits-since/JeffreyCA/spleeter-web/latest/master?color=yellow)](https://github.com/JeffreyCA/spleeter-web/commits/master) [![Docker Compose push (master)](https://github.com/JeffreyCA/spleeter-web/actions/workflows/master.yml/badge.svg?branch=master)](https://github.com/JeffreyCA/spleeter-web/actions/workflows/master.yml)
+# Spleeter Web (Sound Labbit Technology fork)
+
+> Based on [Spleeter Web](https://github.com/JeffreyCA/spleeter-web) by [Jeffrey Chen](https://github.com/JeffreyCA)
+
+[![Docker Compose push (master)](https://github.com/SoundLabbitTechnology/spleeter-web-roformer/actions/workflows/master.yml/badge.svg?branch=master)](https://github.com/SoundLabbitTechnology/spleeter-web-roformer/actions/workflows/master.yml) [![Upstream latest release](https://img.shields.io/github/v/release/JeffreyCA/spleeter-web?label=upstream%20release)](https://github.com/JeffreyCA/spleeter-web/releases)
+
+This repository is a fork of [JeffreyCA/spleeter-web](https://github.com/JeffreyCA/spleeter-web), maintained by [Sound Labbit Technology](https://www.soundlabbittechnology.co.jp/) (株式会社 Sound Labbit Technology).
+
+**This fork is not an official distribution of the upstream project.**
+
+### Relationship with upstream
+
+| | |
+| --- | --- |
+| Upstream | https://github.com/JeffreyCA/spleeter-web |
+| Upstream author | Jeffrey Chen ([@JeffreyCA](https://github.com/JeffreyCA)) |
+| Upstream license | [MIT](./LICENSE) |
+| Maintainer of this fork | [Sound Labbit Technology](https://www.soundlabbittechnology.co.jp/) |
+| Official upstream distribution | No |
+
+### Changes from upstream
+
+- Task-oriented separation presets (Fast Demucs, High-quality 6-stem, Mel-RoFormer vocal isolation, Efficient SCNet)
+- Mel-Band RoFormer and SCNet model integrations
+- Centralized separator model registry (`api/separators/registry.py`)
+- GPU inference profiles (`GPU_PROFILE`) for shared-worker deployments
+- Natural-language target separation gateway (`semantic_text`) via an external service
+- Separation queue / operations status API (`GET /api/operations/`)
+- Django upgrades and pull-request validation workflow
+
+See [CHANGELOG.md](./CHANGELOG.md) for details.
+
+---
 
 Spleeter Web is a web application for isolating or removing the vocal, accompaniment, bass, and/or drum components of any song. For example, you can use it to isolate the vocals of a track, or you can use it remove the vocals to get an instrumental version of a song.
 
@@ -36,6 +67,8 @@ The app uses [Django](https://www.djangoproject.com/) for the backend API and [R
 - [Deployment](#deployment)
 - [Common issues & FAQs](#common-issues--faqs)
 - [Credits](#credits)
+- [Security](#security)
+- [Contributing](#contributing)
 - [License](#license)
 
 ## Features
@@ -122,6 +155,8 @@ separate model access approval.
 
 ## [Demo site](https://jeffreyca.github.io/spleeter-web/)
 
+> Upstream demo hosted by the original author. It may not include features unique to this fork.
+
 **Homepage**
 
 <img src="./screenshots/main.png" width="80%">
@@ -142,8 +177,8 @@ separate model access approval.
 ### Instructions
 1. Clone repo:
     ```sh
-    $ git clone https://github.com/JeffreyCA/spleeter-web.git
-    $ cd spleeter-web
+    $ git clone https://github.com/SoundLabbitTechnology/spleeter-web-roformer.git
+    $ cd spleeter-web-roformer
     ```
 2. (Optional) Set the YouTube Data API key (for YouTube search functionality):
 
@@ -363,13 +398,13 @@ If you have `ENABLE_CROSS_ORIGIN_HEADERS` set, then you'll need to additionally 
 
 1. Clone this git repo
     ```sh
-    $ git clone https://github.com/JeffreyCA/spleeter-web.git
-    $ cd spleeter-web
+    $ git clone https://github.com/SoundLabbitTechnology/spleeter-web-roformer.git
+    $ cd spleeter-web-roformer
     ```
 
 2. (Optional) If self-hosting, update `docker-compose.prod.selfhost.yml` and replace `./media` with the path where media files should be stored on the server.
 
-3. In `spleeter-web`, create an `.env` file with the production environment variables
+3. In `spleeter-web-roformer`, create an `.env` file with the production environment variables
 
     Example `.env` file:
     ```
@@ -410,8 +445,13 @@ Enabling HTTPS allows you to export Dynamic Mixes from your browser. To enable H
 
 ## [Common issues & FAQs](https://github.com/JeffreyCA/spleeter-web/wiki/Common-issues-&-FAQs)
 
+Upstream wiki (maintained by the original author). Fork-specific issues can be filed in this repository.
+
 ## Credits
-Special thanks to my [Sponsors](https://github.com/sponsors/JeffreyCA/):
+
+This fork is maintained by [Sound Labbit Technology](https://www.soundlabbittechnology.co.jp/).
+
+Original project by [Jeffrey Chen](https://github.com/JeffreyCA). Special thanks to upstream [Sponsors](https://github.com/sponsors/JeffreyCA/):
 
 * [603000](https://github.com/603000)
 
@@ -422,6 +462,7 @@ And especially to all the researchers and devs behind all the source separation 
 * [CrossNet-Open-Unmix](https://github.com/sony/ai-research-code/tree/master/x-umx)
 * [D3Net](https://github.com/sony/ai-research-code/tree/master/d3net)
 * [BS-RoFormer](https://github.com/lucidrains/BS-RoFormer)
+* [SCNet](https://github.com/starrytong/SCNet)
 
 And additional thanks to these wonderful projects:
 
@@ -434,5 +475,16 @@ And additional thanks to these wonderful projects:
 
 Turntable icon made from [Icon Fonts](https://www.onlinewebfonts.com/icon/497039) is licensed by CC BY 3.0.
 
+## Security
+
+Please see [SECURITY.md](./SECURITY.md) for how to report vulnerabilities in this fork.
+
+## Contributing
+
+Please see [CONTRIBUTING.md](./CONTRIBUTING.md). By participating, you agree to follow our [Code of Conduct](./CODE_OF_CONDUCT.md).
+
 ## License
-[MIT](./LICENSE)
+
+This project (upstream and this fork) is licensed under the [MIT License](./LICENSE).
+
+Copyright notices and attribution details are also recorded in [NOTICE](./NOTICE).
