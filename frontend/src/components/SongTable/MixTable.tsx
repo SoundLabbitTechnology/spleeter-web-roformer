@@ -1,14 +1,23 @@
+import { createFFmpeg, FFmpeg } from '@jeffreyca/ffmpeg';
 import * as React from 'react';
-import { Badge, Button, OverlayTrigger, Tooltip } from 'react-bootstrap';
+import { Alert, Badge, Button, OverlayTrigger, Tooltip } from 'react-bootstrap';
 import { Download } from 'react-bootstrap-icons';
 import BootstrapTable, { ColumnDescription, ColumnFormatter, SortOrder } from 'react-bootstrap-table-next';
 import 'react-bootstrap-table-next/dist/react-bootstrap-table2.min.css';
 import { OverlayInjectedProps } from 'react-bootstrap/esm/Overlay';
+import { DEFAULT_OUTPUT_FORMAT } from '../../Constants';
 import { DynamicMix } from '../../models/DynamicMix';
 import { separatorLabelMap } from '../../models/Separator';
 import { StaticMix } from '../../models/StaticMix';
 import { toLocaleDateTimeString, toRelativeDateSpan } from '../../Utils';
+import {
+  exportSelectedMix,
+  exportStemsZip,
+  FFMPEG_CORE_PATH,
+  getAvailableStems,
+} from '../../utils/stemExport';
 import { AccompBadge, AllBadge, BassBadge, DrumsBadge, GuitarBadge, PianoBadge, VocalsBadge } from '../Badges';
+import ExportModal, { ExportSubmitParams } from '../Mixer/ExportModal';
 import DeleteDynamicMixButton from './Button/DeleteDynamicMixButton';
 import DeleteStaticMixButton from './Button/DeleteStaticMixButton';
 import PausePlayButton from './Button/PausePlayButton';
@@ -154,7 +163,7 @@ const partsFormatter: ColumnFormatter<MixItem> = (cellContent, row) => {
  * Formatter for download/delete column.
  */
 const actionFormatter: ColumnFormatter<MixItem> = (cell, row, rowIndex, formatExtraData) => {
-  const { onDeleteDynamicMixClick, onDeleteStaticMixClick } = formatExtraData;
+  const { onDeleteDynamicMixClick, onDeleteStaticMixClick, onExportDynamicMixClick } = formatExtraData;
 
   if (row.static) {
     const mix = row.mix as StaticMix;
@@ -170,8 +179,18 @@ const actionFormatter: ColumnFormatter<MixItem> = (cell, row, rowIndex, formatEx
     );
   } else {
     const mix = row.mix as DynamicMix;
+    const canExport = mix.status === 'Done' && getAvailableStems(mix).length > 0;
     return (
       <div className="d-flex align-items-center justify-content-end">
+        <Button
+          variant="success"
+          className="mr-1"
+          disabled={!canExport}
+          onClick={() => onExportDynamicMixClick(mix)}
+          title="Export selected parts"
+        >
+          <Download />
+        </Button>
         <DeleteDynamicMixButton onClick={onDeleteDynamicMixClick} mix={mix} />
       </div>
     );
@@ -189,10 +208,136 @@ interface Props {
   onPlayClick: (song: StaticMix) => void;
 }
 
+interface State {
+  exportMix?: DynamicMix;
+  showExportModal: boolean;
+  isExporting: boolean;
+  exportRatio: number;
+  exportError?: string;
+}
+
 /**
  * Component for table showing all of a source track's dynamic and static mixes.
  */
-class MixTable extends React.Component<Props> {
+class MixTable extends React.Component<Props, State> {
+  ffmpeg?: FFmpeg;
+  ffmpegLoading?: Promise<FFmpeg>;
+
+  constructor(props: Props) {
+    super(props);
+    this.state = {
+      showExportModal: false,
+      isExporting: false,
+      exportRatio: 0,
+    };
+  }
+
+  componentWillUnmount(): void {
+    try {
+      this.ffmpeg?.exit();
+    } catch (e) {
+      // ignore
+    }
+  }
+
+  ensureFfmpeg = async (): Promise<FFmpeg> => {
+    if (this.ffmpeg) {
+      return this.ffmpeg;
+    }
+    if (!this.ffmpegLoading) {
+      this.ffmpegLoading = (async () => {
+        const ffmpeg = createFFmpeg({
+          corePath: FFMPEG_CORE_PATH,
+          log: false,
+          progress: ({ ratio }) => {
+            this.setState({ exportRatio: Math.min(1, Math.max(0, ratio)) });
+          },
+        });
+        await ffmpeg.load();
+        this.ffmpeg = ffmpeg;
+        return ffmpeg;
+      })();
+    }
+    return this.ffmpegLoading;
+  };
+
+  onExportDynamicMixClick = (mix: DynamicMix): void => {
+    this.setState({
+      exportMix: mix,
+      showExportModal: true,
+      exportRatio: 0,
+      exportError: undefined,
+    });
+  };
+
+  onExportHide = (): void => {
+    if (this.state.isExporting) {
+      return;
+    }
+    this.setState({
+      showExportModal: false,
+      exportMix: undefined,
+      exportRatio: 0,
+    });
+  };
+
+  onExportSubmit = async (params: ExportSubmitParams): Promise<void> => {
+    const { exportMix } = this.state;
+    if (!exportMix) {
+      return;
+    }
+
+    const available = getAvailableStems(exportMix);
+    const selectedStems = available.filter(stem => params.selectedParts.includes(stem.id));
+    if (selectedStems.length === 0) {
+      this.setState({ exportError: 'Select at least one part.' });
+      return;
+    }
+
+    this.setState({
+      isExporting: true,
+      exportRatio: 0,
+      exportError: undefined,
+    });
+
+    try {
+      if (params.mode === 'zip') {
+        await exportStemsZip(
+          selectedStems.map(s => ({ url: s.url, fileName: s.fileName })),
+          params.name,
+          ratio => this.setState({ exportRatio: ratio })
+        );
+      } else {
+        const ffmpeg = await this.ensureFfmpeg();
+        await exportSelectedMix(
+          ffmpeg,
+          selectedStems.map(stem => ({
+            fileName: stem.fileName,
+            url: stem.url,
+            volumeDb: 0,
+          })),
+          params.name,
+          exportMix.bitrate ?? DEFAULT_OUTPUT_FORMAT,
+          ratio => this.setState({ exportRatio: ratio })
+        );
+      }
+      this.setState({
+        showExportModal: false,
+        exportMix: undefined,
+      });
+    } catch (ex: any) {
+      this.setState({
+        exportError: ex?.message || 'Export failed.',
+      });
+      console.error(ex);
+    } finally {
+      this.setState({
+        isExporting: false,
+        exportRatio: 0,
+      });
+    }
+  };
+
   render(): JSX.Element {
     const {
       staticMixes,
@@ -204,6 +349,8 @@ class MixTable extends React.Component<Props> {
       onPauseClick,
       onPlayClick,
     } = this.props;
+    const { exportMix, showExportModal, isExporting, exportRatio, exportError } = this.state;
+
     const columns: ColumnDescription[] = [
       {
         dataField: 'status_dummy',
@@ -287,9 +434,10 @@ class MixTable extends React.Component<Props> {
         formatExtraData: {
           onDeleteDynamicMixClick: onDeleteDynamicMixClick,
           onDeleteStaticMixClick: onDeleteStaticMixClick,
+          onExportDynamicMixClick: this.onExportDynamicMixClick,
         },
         style: () => {
-          return { maxWidth: '130px', paddingRight: 28 };
+          return { maxWidth: '160px', paddingRight: 28 };
         },
       },
     ];
@@ -323,9 +471,16 @@ class MixTable extends React.Component<Props> {
       })
     );
 
+    const availableParts = exportMix ? getAvailableStems(exportMix) : [];
+
     if (data.length > 0) {
       return (
         <div className="inner-table-div">
+          {exportError && (
+            <Alert variant="danger" className="mb-2" onClose={() => this.setState({ exportError: undefined })} dismissible>
+              {exportError}
+            </Alert>
+          )}
           <BootstrapTable
             classes="inner-table mb-0"
             bootstrap4
@@ -335,6 +490,17 @@ class MixTable extends React.Component<Props> {
             defaultSorted={[defaultSort]}
             defaultSortDirection="asc"
             bordered={false}
+          />
+          <ExportModal
+            defaultName={exportMix ? `${exportMix.title} - ${exportMix.artist}` : 'export'}
+            availableParts={availableParts}
+            initialSelectedParts={availableParts.map(p => p.id)}
+            show={showExportModal}
+            hide={this.onExportHide}
+            submit={this.onExportSubmit}
+            isExporting={isExporting}
+            exportRatio={exportRatio}
+            volumeAware={false}
           />
         </div>
       );

@@ -1,4 +1,4 @@
-import { createFFmpeg, fetchFile, FFmpeg, ProgressCallback } from '@jeffreyca/ffmpeg';
+import { createFFmpeg, FFmpeg, ProgressCallback } from '@jeffreyca/ffmpeg';
 import * as React from 'react';
 import { Alert } from 'react-bootstrap';
 import * as Tone from 'tone';
@@ -6,7 +6,13 @@ import { ToneAudioBuffersUrlMap } from 'tone';
 import { DEFAULT_OUTPUT_FORMAT, FADE_DURATION_S } from '../../Constants';
 import { DynamicMix } from '../../models/DynamicMix';
 import { PartId, PartIds } from '../../models/PartId';
-import ExportModal from './ExportModal';
+import {
+  exportSelectedMix,
+  exportStemsZip,
+  FFMPEG_CORE_PATH,
+  getAvailableStems,
+} from '../../utils/stemExport';
+import ExportModal, { ExportSubmitParams } from './ExportModal';
 import './MixerPlayer.css';
 import PlayerUI from './PlayerUI';
 import VolumeUI from './VolumeUI';
@@ -224,7 +230,7 @@ class MixerPlayer extends React.Component<Props, State> {
         isExportInitializing: true,
       });
       this.ffmpeg = createFFmpeg({
-        corePath: '/static/dist/node_modules/@jeffreyca/ffmpeg.wasm-core/dist/ffmpeg-core.js',
+        corePath: FFMPEG_CORE_PATH,
         log: false,
         progress: this.onExportProgressTick,
       });
@@ -257,192 +263,76 @@ class MixerPlayer extends React.Component<Props, State> {
     }
   }
 
-  exportMix = async (mixName: string): Promise<void> => {
-    if (!this.ffmpeg) {
-      this.setState({
-        exportError: 'Unable to initialize ffmpeg.',
-      });
+  getInitialSelectedParts = (): PartId[] => {
+    if (!this.props.data) {
+      return [];
+    }
+    const available = getAvailableStems(this.props.data);
+    const { muteStatus } = this.state;
+    return available.filter(stem => !muteStatus[stem.id]).map(stem => stem.id);
+  };
+
+  exportMix = async (params: ExportSubmitParams): Promise<void> => {
+    const { data } = this.props;
+    if (!data) {
+      this.setState({ exportError: 'Unexpected error (2).' });
       return;
     }
 
-    if (!this.tonePlayers) {
-      this.setState({
-        exportError: 'Unexpected error (1).',
-      });
+    const available = getAvailableStems(data);
+    const selectedStems = available.filter(stem => params.selectedParts.includes(stem.id));
+    if (selectedStems.length === 0) {
+      this.setState({ exportError: 'Select at least one part.' });
       return;
     }
-
-    if (
-      !this.props.data?.vocals_url ||
-      !this.props.data?.other_url
-    ) {
-      this.setState({
-        exportError: 'Unexpected error (2).',
-      });
-      return;
-    }
-
-    const ffmpeg = this.ffmpeg;
-    const vocalsDb = this.tonePlayers.player('vocals').volume.value;
-    const accompDb = this.tonePlayers.player('accomp').volume.value;
-    const pianoDb = this.hasPiano() ? this.tonePlayers.player('piano').volume.value : -Infinity;
-    const bassDb = this.hasBass() ? this.tonePlayers.player('bass').volume.value : -Infinity;
-    const drumsDb = this.hasDrums() ? this.tonePlayers.player('drums').volume.value : -Infinity;
-    const guitarDb = this.hasGuitar() ? this.tonePlayers.player('guitar').volume.value : -Infinity;
-    const vocalsVolArg = vocalsDb === -Infinity ? '0' : `${vocalsDb}dB`;
-    const accompVolArg = accompDb === -Infinity ? '0' : `${accompDb}dB`;
-    const pianoVolArg = pianoDb === -Infinity ? '0' : `${pianoDb}dB`;
-    const bassVolArg = bassDb === -Infinity ? '0' : `${bassDb}dB`;
-    const drumsVolArg = drumsDb === -Infinity ? '0' : `${drumsDb}dB`;
-    const guitarVolArg = guitarDb === -Infinity ? '0' : `${guitarDb}dB`;
 
     this.setState({
       isExporting: true,
       exportRatio: 0,
+      exportError: undefined,
     });
 
-    const ext = this.props.data.vocals_url.split('.').pop();
-    const isLossless = ext === 'wav' || ext === 'flac';
-    const vocalsFile = 'vocals.' + ext;
-    const otherFile = 'other.' + ext;
-    const pianoFile = 'piano.' + ext;
-    const bassFile = 'bass.' + ext;
-    const drumsFile = 'drums.' + ext;
-    const guitarFile = 'guitar.' + ext;
-    const outFile = 'output.' + ext;
-    const bitrate = this.props.data?.bitrate ?? DEFAULT_OUTPUT_FORMAT;
+    try {
+      if (params.mode === 'zip') {
+        await exportStemsZip(
+          selectedStems.map(s => ({ url: s.url, fileName: s.fileName })),
+          params.name,
+          ratio => this.setState({ exportRatio: ratio })
+        );
+      } else {
+        if (!this.ffmpeg) {
+          throw new Error('Unable to initialize ffmpeg.');
+        }
 
-    ffmpeg.FS('writeFile', vocalsFile, await fetchFile(this.props.data.vocals_url));
-    ffmpeg.FS('writeFile', otherFile, await fetchFile(this.props.data.other_url));
-    if (!this.hasBass() && !this.hasDrums()) {
-      await ffmpeg.run(
-        '-i', vocalsFile,
-        '-i', otherFile,
-        '-filter_complex',
-        `[0:a]volume=${vocalsVolArg}[a0];[1:a]volume=${accompVolArg}[a1];[a0][a1]amix=inputs=2:duration=first:normalize=0[a]`,
-        isLossless ? '-sample_fmt' : '-b:a',
-        isLossless ? 's16' : `${bitrate}k`,
-        '-map', '[a]', outFile,
-      );
-      this.setState({ isExporting: false });
-      const data = ffmpeg.FS('readFile', outFile);
-      const url = URL.createObjectURL(new Blob([data.buffer]));
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `${mixName}.${ext}`;
-      link.click();
-      return;
+        const mixInputs = selectedStems.map(stem => {
+          // Use stored volume level so explicitly selected (even muted) parts are included
+          return {
+            fileName: stem.fileName,
+            url: stem.url,
+            volumeDb: this.state.volume[stem.id],
+          };
+        });
+
+        await exportSelectedMix(
+          this.ffmpeg,
+          mixInputs,
+          params.name,
+          data.bitrate ?? DEFAULT_OUTPUT_FORMAT,
+          ratio => this.setState({ exportRatio: ratio })
+        );
+      }
+    } catch (ex: any) {
+      this.setState({
+        exportError: ex?.message || 'Export failed.',
+      });
+      console.error(ex);
+    } finally {
+      this.setState({
+        isExporting: false,
+        showExportModal: false,
+        exportRatio: 0,
+      });
     }
-    ffmpeg.FS('writeFile', bassFile, await fetchFile(this.props.data.bass_url));
-    ffmpeg.FS('writeFile', drumsFile, await fetchFile(this.props.data.drums_url));
-    if (this.hasPiano()) {
-      ffmpeg.FS('writeFile', pianoFile, await fetchFile(this.props.data.piano_url));
-    }
-    if (this.hasGuitar()) {
-      ffmpeg.FS('writeFile', guitarFile, await fetchFile(this.props.data.guitar_url));
-    }
-
-    let args: string[];
-    if (this.hasPiano() && this.hasGuitar()) {
-      // 6 stems: vocals, accomp (other), piano, bass, drums, guitar
-      args = [
-        '-i',
-        vocalsFile,
-        '-i',
-        otherFile,
-        '-i',
-        pianoFile,
-        '-i',
-        bassFile,
-        '-i',
-        drumsFile,
-        '-i',
-        guitarFile,
-        '-filter_complex',
-        `[0:a]volume=${vocalsVolArg}[a0];[1:a]volume=${accompVolArg}[a1];[2:a]volume=${pianoVolArg}[a2];[3:a]volume=${bassVolArg}[a3];[4:a]volume=${drumsVolArg}[a4];[5:a]volume=${guitarVolArg}[a5];[a0][a1][a2][a3][a4][a5]amix=inputs=6:duration=first:normalize=0[a]`,
-        isLossless ? '-sample_fmt' : '-b:a',
-        isLossless ? 's16' : `${bitrate}k`,
-        '-map',
-        '[a]',
-        outFile,
-      ];
-    } else if (this.hasPiano()) {
-      // 5 stems: vocals, accomp (other), piano, bass, drums
-      args = [
-        '-i',
-        vocalsFile,
-        '-i',
-        otherFile,
-        '-i',
-        pianoFile,
-        '-i',
-        bassFile,
-        '-i',
-        drumsFile,
-        '-filter_complex',
-        // https://ffmpeg.org/ffmpeg-filters.html#amix, https://trac.ffmpeg.org/wiki/AudioVolume
-        `[0:a]volume=${vocalsVolArg}[a0];[1:a]volume=${accompVolArg}[a1];[2:a]volume=${pianoVolArg}[a2];[3:a]volume=${bassVolArg}[a3];[4:a]volume=${drumsVolArg}[a4];[a0][a1][a2][a3][a4]amix=inputs=5:duration=first:normalize=0[a]`,
-        isLossless ? '-sample_fmt' : '-b:a',
-        isLossless ? 's16' : `${bitrate}k`,
-        '-map',
-        '[a]',
-        outFile,
-      ];
-    } else if (this.hasGuitar()) {
-      // 5 stems: vocals, accomp (other), bass, drums, guitar
-      args = [
-        '-i',
-        vocalsFile,
-        '-i',
-        otherFile,
-        '-i',
-        bassFile,
-        '-i',
-        drumsFile,
-        '-i',
-        guitarFile,
-        '-filter_complex',
-        `[0:a]volume=${vocalsVolArg}[a0];[1:a]volume=${accompVolArg}[a1];[2:a]volume=${bassVolArg}[a2];[3:a]volume=${drumsVolArg}[a3];[4:a]volume=${guitarVolArg}[a4];[a0][a1][a2][a3][a4]amix=inputs=5:duration=first:normalize=0[a]`,
-        isLossless ? '-sample_fmt' : '-b:a',
-        isLossless ? 's16' : `${bitrate}k`,
-        '-map',
-        '[a]',
-        outFile,
-      ];
-    } else {
-      args = [
-        '-i',
-        vocalsFile,
-        '-i',
-        otherFile,
-        '-i',
-        bassFile,
-        '-i',
-        drumsFile,
-        '-filter_complex',
-        // https://ffmpeg.org/ffmpeg-filters.html#amix, https://trac.ffmpeg.org/wiki/AudioVolume
-        `[0:a]volume=${vocalsVolArg}[a0];[1:a]volume=${accompVolArg}[a1];[2:a]volume=${bassVolArg}[a2];[3:a]volume=${drumsVolArg}[a3];[a0][a1][a2][a3]amix=inputs=4:duration=first:normalize=0[a]`,
-        isLossless ? '-sample_fmt' : '-b:a',
-        isLossless ? 's16' : `${bitrate}k`,
-        '-map',
-        '[a]',
-        outFile,
-      ];
-    }
-
-    await ffmpeg.run(...args);
-    this.setState({
-      isExporting: false,
-    });
-
-    const data = ffmpeg.FS('readFile', outFile);
-
-    // Download file through browser
-    const url = URL.createObjectURL(new Blob([data.buffer]));
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `${mixName}.${ext}`;
-    link.click();
   };
 
   /**
@@ -812,11 +702,14 @@ class MixerPlayer extends React.Component<Props, State> {
         </Alert>
         <ExportModal
           defaultName={`${data?.title} - ${data?.artist}`}
+          availableParts={data ? getAvailableStems(data) : []}
+          initialSelectedParts={this.getInitialSelectedParts()}
           show={showExportModal}
           hide={this.onExportHide}
           submit={this.exportMix}
           isExporting={isExporting}
           exportRatio={exportRatio}
+          volumeAware
         />
       </div>
     );

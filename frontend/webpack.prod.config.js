@@ -1,5 +1,6 @@
 const path = require('path');
 const webpack = require('webpack');
+const BundleTracker = require('webpack-bundle-tracker');
 const TerserPlugin = require('terser-webpack-plugin');
 const CopyWebpackPlugin = require("copy-webpack-plugin");
 
@@ -9,9 +10,14 @@ module.exports = {
   entry: './src/index',
   output: {
     path: path.resolve('./assets/dist/'),
-    filename: '[name].js'
+    filename: '[name].js',
+    publicPath: '/static/dist/',
   },
   plugins: [
+    new BundleTracker({
+      path: __dirname,
+      filename: './assets/webpack-stats.json'
+    }),
     new CopyWebpackPlugin({ 
       patterns: [ 
         { from: './src/favicon.ico' },

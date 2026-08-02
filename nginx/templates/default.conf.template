@@ -10,10 +10,14 @@ server {
 
     location /static/ {
         alias /webapp/staticfiles/;
+        # Required for ffmpeg.wasm SharedArrayBuffer (COEP require-corp)
+        add_header Cross-Origin-Resource-Policy cross-origin always;
     }
 
     location /media/ {
         alias /webapp/media/;
+        # Required so stem audio loads under COEP require-corp
+        add_header Cross-Origin-Resource-Policy cross-origin always;
     }
 
     location / {
