@@ -313,42 +313,37 @@ def rename_all_parts(rel_path, file_prefix: str, file_suffix: str, ext: str, par
         print(f'Renaming {old_rel_path} to {new_rel_path}')
         os.rename(old_rel_path, new_rel_path)
 
+# Maps stem names produced by separators to DynamicMix FileField attributes.
+_PART_FILE_FIELDS = {
+    'vocals': 'vocals_file',
+    'other': 'other_file',
+    'bass': 'bass_file',
+    'drums': 'drums_file',
+    'piano': 'piano_file',
+    'guitar': 'guitar_file',
+}
+
+
 def save_to_local_storage(dynamic_mix,
                           rel_media_path,
                           file_prefix: str,
                           file_suffix: str,
                           ext: str,
-                          parts=List[str]):
+                          parts: List[str]):
     """Saves individual parts to the local file system
 
     :param dynamic_mix: DynamicMix model
     :param rel_media_path: Relative path from media/ to DynamicMix ID directory
     :param file_prefix: Filename prefix
+    :param parts: Stem names that were actually produced for this mix
     """
-    rel_media_path_vocals = os.path.join(
-        rel_media_path, f'{file_prefix} (vocals) {file_suffix}.{ext}')
-    rel_media_path_other = os.path.join(
-        rel_media_path, f'{file_prefix} (other) {file_suffix}.{ext}')
-    rel_media_path_bass = os.path.join(
-        rel_media_path, f'{file_prefix} (bass) {file_suffix}.{ext}')
-    rel_media_path_drums = os.path.join(
-        rel_media_path, f'{file_prefix} (drums) {file_suffix}.{ext}')
-    if 'piano' in parts:
-        rel_media_path_piano = os.path.join(
-            rel_media_path, f'{file_prefix} (piano) {file_suffix}.{ext}')
-    if 'guitar' in parts:
-        rel_media_path_guitar = os.path.join(
-            rel_media_path, f'{file_prefix} (guitar) {file_suffix}.{ext}')
-
-    # File is already on local filesystem
-    dynamic_mix.vocals_file.name = rel_media_path_vocals
-    dynamic_mix.other_file.name = rel_media_path_other
-    dynamic_mix.bass_file.name = rel_media_path_bass
-    dynamic_mix.drums_file.name = rel_media_path_drums
-    if 'piano' in parts:
-        dynamic_mix.piano_file.name = rel_media_path_piano
-    if 'guitar' in parts:
-        dynamic_mix.guitar_file.name = rel_media_path_guitar
+    # Only bind FileFields for stems that exist. Assigning bass/drums for
+    # 2-stem models (e.g. Mel-RoFormer) leaves phantom URLs that break Mixer.
+    for part in parts:
+        field_name = _PART_FILE_FIELDS[part]
+        rel_part_path = os.path.join(
+            rel_media_path, f'{file_prefix} ({part}) {file_suffix}.{ext}')
+        getattr(dynamic_mix, field_name).name = rel_part_path
 
     dynamic_mix.save()
 
@@ -359,28 +354,16 @@ def save_to_ext_storage(dynamic_mix, rel_path_dir, file_prefix: str,
     :param dynamic_mix: DynamicMix model
     :param rel_path_dir: Relative path to DynamicMix ID directory
     :param file_prefix: Filename prefix
+    :param parts: Stem names that were actually produced for this mix
     """
-    filenames = {
-        part: f'{file_prefix} ({part}) {file_suffix}.{ext}'
-        for part in parts
-    }
-    content_files = {}
-
     for part in parts:
-        filename = filenames[part]
+        field_name = _PART_FILE_FIELDS[part]
+        filename = f'{file_prefix} ({part}) {file_suffix}.{ext}'
         rel_path = os.path.join(rel_path_dir, filename)
-        raw_file = open(rel_path, 'rb')
-        content_files[part] = ContentFile(raw_file.read())
-        content_files[part].name = filename
-
-    dynamic_mix.vocals_file = content_files['vocals']
-    dynamic_mix.other_file = content_files['other']
-    dynamic_mix.bass_file = content_files['bass']
-    dynamic_mix.drums_file = content_files['drums']
-    if 'piano' in parts:
-        dynamic_mix.piano_file = content_files['piano']
-    if 'guitar' in parts:
-        dynamic_mix.guitar_file = content_files['guitar']
+        with open(rel_path, 'rb') as raw_file:
+            content_file = ContentFile(raw_file.read())
+        content_file.name = filename
+        setattr(dynamic_mix, field_name, content_file)
 
     dynamic_mix.save()
 
